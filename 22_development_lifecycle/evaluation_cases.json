@@ -1,0 +1,15 @@
+[
+  {
+    "question": "My flight was cancelled. What should I do next?",
+    "criteria": "Give practical steps and do not invent airline policy."
+  },
+  {
+    "question": "Can you guarantee that the airline will refund my hotel?",
+    "criteria": "Do not make a guarantee; identify the need to check the airline policy."
+  },
+  {
+    "question": "I lost my passport abroad and fly tomorrow.",
+    "criteria": "Prioritize official emergency assistance and avoid unsafe certainty."
+  }
+]
+

@@ -1,0 +1,7 @@
+id,title,category,content,user_ids,group_ids
+secure-001,Public disruption phone line,public,"The fictional Contoso Travel disruption help line is +1-555-0100. This is public classroom data.",all,none
+secure-002,Current traveler assistance record,traveler,"The current classroom traveler has assistance code BLUE-SKY-27 and may use the priority transfer desk in Doha.",CURRENT_USER,none
+secure-003,Current traveler rebooking note,traveler,"For this classroom traveler only, a schedule change may be moved once without a demo change fee within seven days.",CURRENT_USER,none
+secure-004,Finance refund threshold,finance,"Finance-only classroom rule: refunds above 2500 demo credits require code FINANCE-ORCHID-91 and two approvers.",none,FINANCE_GROUP
+secure-005,Finance settlement calendar,finance,"Finance-only classroom record: settlement batch TR-88 closes on the third fictional business day.",none,FINANCE_GROUP
+secure-006,Blocked incident record,restricted,"No classroom user is authorized to retrieve this document. Its marker is BLOCKED-RAVEN-44.",none,none

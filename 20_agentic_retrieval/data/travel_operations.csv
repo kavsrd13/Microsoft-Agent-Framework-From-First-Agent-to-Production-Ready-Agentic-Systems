@@ -1,0 +1,9 @@
+id,title,category,city,content
+public-001,Severe weather rebooking,disruption,Global,"For the fictional Contoso Travel demo, a weather-cancelled flight can be rebooked in the same cabin on the next available service within 48 hours. If the replacement departs the next day, arrange one hotel night and two meal vouchers."
+public-002,Delayed baggage response,baggage,Global,"A delayed international bag must be reported before leaving the arrivals hall. Create a baggage file immediately. The fictional delivery target is 24 hours after the bag reaches the destination airport."
+public-003,Mumbai to Paris connection,route,Doha,"The fictional CT204 journey from Mumbai to Paris connects in Doha. The scheduled connection is 115 minutes. The minimum supported connection is 90 minutes."
+public-004,Doha terminal transfer,airport,Doha,"Flights from Mumbai arrive at Terminal A. Paris departures use Terminal C. The airside shuttle runs every 10 minutes and the ride takes about 25 minutes."
+public-005,Overnight disruption checklist,disruption,Doha,"For an overnight disruption, confirm the replacement flight first, then issue the hotel and meal vouchers. Tell the traveler where to collect checked baggage only if airport operations releases it."
+public-006,Paris baggage desk,baggage,Paris,"The Paris baggage service desk is beside Belt 8 in the international arrivals hall. Keep the baggage file number available for delivery-status updates."
+public-007,Travel document reminder,documents,Global,"Travelers must verify passport, visa, and transit requirements with official government sources. The fictional assistant must not claim that the demo policy replaces government guidance."
+public-008,Accessible connection assistance,assistance,Doha,"Travelers who request mobility assistance should meet the support team at the Terminal A transfer desk. Allow 20 additional minutes beyond the normal shuttle journey."

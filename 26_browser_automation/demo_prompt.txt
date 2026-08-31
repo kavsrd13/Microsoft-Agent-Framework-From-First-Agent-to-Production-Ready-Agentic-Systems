@@ -1,0 +1,4 @@
+Open https://example.com.
+Report the page title and the first paragraph.
+Do not click any external links and do not submit any form.
+

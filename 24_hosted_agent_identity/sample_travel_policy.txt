@@ -1,0 +1,7 @@
+Contoso Travel Policy
+
+Employees must book economy class for flights under six hours.
+Hotel reimbursement is limited to 150 USD per night before taxes.
+Receipts are required for expenses above 25 USD.
+Exceptions require approval from the employee's manager before booking.
+

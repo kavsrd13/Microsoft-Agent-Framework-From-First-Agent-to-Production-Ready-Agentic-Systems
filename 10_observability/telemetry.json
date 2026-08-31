@@ -1,0 +1,85 @@
+{
+  "generated_at": "2026-08-31T18:06:45.700694+00:00",
+  "service_name": "agent-framework-course-demos",
+  "source": "Actual telemetry from this local dashboard_demo.py run",
+  "runs": [
+    {
+      "label": "Service health",
+      "success": false,
+      "latency_ms": 3989.6,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "total_tokens": 0,
+      "error_type": "ChatClientException"
+    },
+    {
+      "label": "Customer update",
+      "success": false,
+      "latency_ms": 296.1,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "total_tokens": 0,
+      "error_type": "ChatClientException"
+    },
+    {
+      "label": "Telemetry lesson",
+      "success": false,
+      "latency_ms": 258.3,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "total_tokens": 0,
+      "error_type": "ChatClientException"
+    }
+  ],
+  "spans": [
+    {
+      "name": "chat gpt-5",
+      "duration_ms": 3823.7,
+      "status": "ERROR",
+      "trace_id": "c3be810a0d625be21989c146466fa4f2",
+      "span_id": "9043f49c3fd79004"
+    },
+    {
+      "name": "invoke_agent OperationsAgent",
+      "duration_ms": 3983.8,
+      "status": "ERROR",
+      "trace_id": "c3be810a0d625be21989c146466fa4f2",
+      "span_id": "9fce99b0ba99a8f9"
+    },
+    {
+      "name": "chat gpt-5",
+      "duration_ms": 287.1,
+      "status": "ERROR",
+      "trace_id": "c3be810a0d625be21989c146466fa4f2",
+      "span_id": "f6e54cf2cf30cd76"
+    },
+    {
+      "name": "invoke_agent OperationsAgent",
+      "duration_ms": 296.1,
+      "status": "ERROR",
+      "trace_id": "c3be810a0d625be21989c146466fa4f2",
+      "span_id": "656cb7a37df9de82"
+    },
+    {
+      "name": "chat gpt-5",
+      "duration_ms": 255.9,
+      "status": "ERROR",
+      "trace_id": "c3be810a0d625be21989c146466fa4f2",
+      "span_id": "c22a2ec4721d4de2"
+    },
+    {
+      "name": "invoke_agent OperationsAgent",
+      "duration_ms": 257.9,
+      "status": "ERROR",
+      "trace_id": "c3be810a0d625be21989c146466fa4f2",
+      "span_id": "e6f2a5cd4221b968"
+    },
+    {
+      "name": "classroom-dashboard-session",
+      "duration_ms": 4544.7,
+      "status": "UNSET",
+      "trace_id": "c3be810a0d625be21989c146466fa4f2",
+      "span_id": "d380900085ef95b7"
+    }
+  ]
+}

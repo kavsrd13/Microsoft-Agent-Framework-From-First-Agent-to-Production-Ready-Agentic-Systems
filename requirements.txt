@@ -1,0 +1,14 @@
+agent-framework-core==1.15.0
+agent-framework-foundry==1.11.0
+agent-framework-foundry-hosting==1.0.0b260827
+agent-framework-gemini==1.0.0b260813
+agent-framework-orchestrations==1.1.1
+agent-framework-azure-ai-search==1.0.0b260813
+azure-search-documents==12.1.0b1
+azure-identity==1.25.3
+azure-storage-blob==12.30.1
+azure-ai-agentserver-optimization==1.0.0b1
+mcp==1.29.0
+opentelemetry-sdk==1.43.0
+python-dotenv==1.2.3
+pydantic==2.13.5

@@ -1,0 +1,8 @@
+venv/
+.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+08_memory/agent-file-memory/
+
