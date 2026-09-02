@@ -19,7 +19,7 @@ async def main() -> None:
     agent = Agent(
         client=client,
         name="HelloAgent",
-        instructions="You are a friendly assistant. Keep your answers brief.",
+        instructions="You are a friendly assistant. Keep your answers in detail.",
     )
 
     result = await agent.run("What is the capital of France?")

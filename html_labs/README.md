@@ -1,6 +1,6 @@
 # Participant HTML lab workbook
 
-Open [index.html](index.html) in a browser. It links all 28 labs in the recommended course sequence. Displayed lab numbers follow this sequence; source-folder numbers remain stable identifiers.
+Open [index.html](index.html) in a browser. It links all 26 labs in the recommended course sequence. Displayed lab numbers follow this sequence; source-folder numbers remain stable identifiers. The original client, first-agent, and streaming exercises are combined into Lab 00.
 
 Each page is self-contained for classroom delivery and repeats the required readiness steps: create and activate `venv`, install the pinned libraries, configure `.env`, run `az login`, create or verify topic-specific resources, build code in small modules, run the scenario, validate the output, and complete the knowledge check.
 

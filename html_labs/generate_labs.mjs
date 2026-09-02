@@ -14,49 +14,23 @@ const HOSTING = `${CORE} agent-framework-foundry-hosting==1.0.0b260827`;
 
 const labs = [
   {
-    id: "00", slug: "clients", folder: "00_client", title: "Foundry and Gemini Chat Clients",
-    phase: "Phase 1 · Clients and agent responses", level: "100", duration: "50 min", resource: "Foundry + optional Gemini",
-    why: "A client is the model-provider boundary. Seeing Foundry and Gemini side by side makes it clear that the Agent abstraction stays stable while authentication and model configuration change.",
-    objectives: ["Create FoundryChatClient with AzureCliCredential", "Create GeminiChatClient with an API key kept in .env", "Compare provider configuration without changing the Agent programming model"],
-    concepts: [["Chat client", "Connects Agent Framework to a model provider."], ["AzureCliCredential", "Uses the identity established by az login for classroom access."], ["Provider portability", "The Agent interface stays consistent even when the model provider changes."]],
+    id: "00", slug: "first-agent", folder: "00_client", title: "Create, Run, and Stream Your First Agent",
+    phase: "Phase 1 · Clients and agent responses", level: "100", duration: "110 min", resource: "Foundry + optional Gemini",
+    why: "This combined introduction follows one complete learning path: understand the model client, create an Agent, run it for a complete response, stream a second response, and finally compare the same Agent abstraction with an optional Gemini client.",
+    objectives: ["Configure FoundryChatClient with AzureCliCredential", "Create an Agent with a name and instructions", "Run the agent and inspect the complete AgentResponse", "Stream incremental response updates", "Compare Foundry and Gemini client configuration without changing the Agent programming model"],
+    concepts: [["Chat client", "Connects Agent Framework to a model provider."], ["AzureCliCredential", "Uses the identity established by az login for classroom access."], ["Agent", "Combines a client, instructions, tools, context, and a run interface."], ["AgentResponse", "Contains the completed model response and related metadata."], ["Streaming", "Returns incremental response updates through async iteration."], ["Provider portability", "The Agent interface stays consistent when the model provider changes."]],
     packages: `${CORE} agent-framework-gemini==1.0.0b260813`, needsFoundry: true,
     env: ["GEMINI_API_KEY=<your Google AI Studio key>", "GEMINI_MODEL=gemini-3.6-flash"],
-    resources: ["Use an instructor-provided Foundry project and model deployment, or create them in Microsoft Foundry.", "For the optional Gemini use case, create a Google AI Studio API key and place it only in the git-ignored .env file."],
+    resources: ["Use an instructor-provided Foundry project and model deployment, or create them in Microsoft Foundry.", "Confirm that the signed-in Azure CLI identity can invoke the Foundry model deployment.", "For the optional Gemini comparison, create a Google AI Studio API key and place it only in the git-ignored .env file."],
     files: [
-      { source: "00_client/demo.py", target: "00_client/student_foundry_client.py", label: "Use case 1 — Microsoft Foundry client", purpose: "Build the explicit classroom authentication path." },
-      { source: "00_client/gemini_demo.py", target: "00_client/student_gemini_client.py", label: "Use case 2 — Gemini client", purpose: "Change the provider while preserving the Agent shape." },
+      { source: "01_agent_creation/demo.py", target: "01_agent_creation/student_first_agent.py", label: "Part 1 — Create and run the first Foundry agent", purpose: "Make the Foundry client, classroom authentication, Agent instructions, run call, and completed response visible in one small program." },
+      { source: "02_streaming/demo.py", target: "02_streaming/student_streaming_agent.py", label: "Part 2 — Stream the Foundry agent response", purpose: "Reuse the same client and Agent concepts while consuming response updates as they arrive." },
+      { source: "00_client/gemini_demo.py", target: "00_client/student_gemini_agent.py", label: "Part 3 — Compare an optional Gemini client", purpose: "Change the provider-specific client and authentication while preserving the Agent programming model." },
     ],
-    run: ["python .\\00_client\\student_foundry_client.py", "python .\\00_client\\student_gemini_client.py"],
-    expected: ["Both programs return a short definition of Microsoft Agent Framework.", "No credential value is printed or stored in a Python file."],
-    challenge: "Change only the model setting and instructions, then compare response style and latency.",
-    knowledge: { concept: "The chat client is the provider-specific boundary while Agent remains the common abstraction.", setup: "Keep the Gemini key in .env and use AzureCliCredential after az login for Foundry.", outcome: "Both clients successfully create an Agent and return a response." },
-  },
-  {
-    id: "01", slug: "agent-creation", folder: "01_agent_creation", title: "Create and Run Your First Agent",
-    phase: "Phase 1 · Clients and agent responses", level: "100", duration: "35 min", resource: "Foundry",
-    why: "This is the smallest useful Agent Framework program and establishes the client, instructions, run, and response pattern used throughout the course.",
-    objectives: ["Configure FoundryChatClient", "Create an Agent with a name and instructions", "Run the agent asynchronously and print its response"],
-    concepts: [["Agent", "Combines a client, instructions, tools, context, and execution options."], ["Instructions", "Define stable behavior for the agent."], ["AgentResponse", "Contains the final model response and related metadata."]],
-    packages: CORE, needsFoundry: true,
-    resources: ["Confirm that the classroom identity has access to the Foundry project and deployed model."],
-    files: [{ source: "01_agent_creation/demo.py", target: "01_agent_creation/student_lab.py", label: "Build the first agent", purpose: "Assemble the minimal explicit Agent pattern." }],
-    run: ["python .\\01_agent_creation\\student_lab.py"],
-    expected: ["The program prints the capital of France prefixed with Agent:", "The response follows the brief-answer instruction."],
-    challenge: "Change the instructions so the answer contains exactly three bullets, then rerun.",
-    knowledge: { concept: "An Agent combines a model client with behavior instructions and a run interface.", setup: "Configure FOUNDRY_PROJECT_ENDPOINT and FOUNDRY_MODEL, then authenticate with az login.", outcome: "The terminal prints a model-generated answer through agent.run()." },
-  },
-  {
-    id: "02", slug: "streaming", folder: "02_streaming", title: "Stream an Agent Response",
-    phase: "Phase 1 · Clients and agent responses", level: "100", duration: "30 min", resource: "Foundry",
-    why: "Streaming improves perceived responsiveness by displaying text as the model produces it instead of waiting for the complete answer.",
-    objectives: ["Request a streaming run", "Iterate over AgentResponseUpdate values", "Print updates without adding unwanted line breaks"],
-    concepts: [["Streaming", "Returns incremental response updates."], ["Async iteration", "Processes updates with async for."], ["Flush", "Shows each update immediately in the terminal."]],
-    packages: CORE, needsFoundry: true, resources: ["Use the same Foundry model deployment as Lab 01."],
-    files: [{ source: "02_streaming/demo.py", target: "02_streaming/student_lab.py", label: "Build the streaming agent", purpose: "Switch the run into streaming mode and consume updates." }],
-    run: ["python .\\02_streaming\\student_lab.py"],
-    expected: ["The answer appears progressively after Agent:", "The script finishes with one clean newline."],
-    challenge: "Print a separator before and after the stream without buffering the response.",
-    knowledge: { concept: "Streaming yields incremental response updates from the same Agent abstraction.", setup: "The Foundry client and authentication are unchanged from a non-streaming run.", outcome: "Text appears incrementally before the full response is complete." },
+    run: ["python .\\01_agent_creation\\student_first_agent.py", "python .\\02_streaming\\student_streaming_agent.py", "# Optional provider comparison", "python .\\00_client\\student_gemini_agent.py"],
+    expected: ["The first program prints the capital of France through a completed AgentResponse.", "The second program displays a one-sentence fact incrementally and finishes with one clean newline.", "If Gemini credentials are configured, the optional program returns a short definition through the same Agent abstraction.", "No credential value is printed or stored in a Python file."],
+    challenge: "Give the non-streaming and streaming agents the same prompt and instructions, then compare only how the response is delivered.",
+    knowledge: { concept: "The model client is provider-specific, while Agent and its run patterns provide the common application abstraction.", setup: "Configure the Foundry endpoint and model, authenticate with az login, and keep the optional Gemini key only in .env.", outcome: "One lab successfully returns a complete Foundry response, streams another response, and optionally runs the same Agent shape with Gemini." },
   },
   {
     id: "03", slug: "structured-output", folder: "03_structured_output", title: "Return Structured Output",
@@ -467,7 +441,7 @@ const labs = [
   },
 ];
 
-const teachingOrder = ["00", "01", "02", "03", "04", "05", "13", "27", "06", "07", "08", "09", "10", "11", "22", "12", "20", "21", "14", "15", "16", "17", "18", "19", "23", "24", "25", "26"];
+const teachingOrder = ["00", "03", "04", "05", "13", "27", "06", "07", "08", "09", "10", "11", "22", "12", "20", "21", "14", "15", "16", "17", "18", "19", "23", "24", "25", "26"];
 
 function displayId(lab) {
   return String(teachingOrder.indexOf(lab.id)).padStart(2, "0");
@@ -483,6 +457,10 @@ function escapeHtml(value) {
 
 function slugFile(lab) {
   return `${lab.id}-${lab.slug}.html`;
+}
+
+function cleanGeneratedHtml(content) {
+  return content.replace(/[ \t]+$/gm, "");
 }
 
 function languageFor(file) {
@@ -733,11 +711,17 @@ function validateGenerated() {
 }
 
 fs.mkdirSync(ASSETS, { recursive: true });
+const currentLabFiles = new Set(labs.map((lab) => slugFile(lab)));
+for (const name of fs.readdirSync(OUT)) {
+  if (/^\d{2}-.*\.html$/.test(name) && !currentLabFiles.has(name)) {
+    fs.rmSync(path.join(OUT, name));
+  }
+}
 fs.writeFileSync(path.join(ASSETS, "lab.css"), css.trimStart(), "utf8");
 fs.writeFileSync(path.join(ASSETS, "lab.js"), js.trimStart(), "utf8");
 for (const lab of labs) {
-  fs.writeFileSync(path.join(OUT, slugFile(lab)), page(lab, readSources(lab)), "utf8");
+  fs.writeFileSync(path.join(OUT, slugFile(lab)), cleanGeneratedHtml(page(lab, readSources(lab))), "utf8");
 }
-fs.writeFileSync(path.join(OUT, "index.html"), indexPage(), "utf8");
+fs.writeFileSync(path.join(OUT, "index.html"), cleanGeneratedHtml(indexPage()), "utf8");
 validateGenerated();
 console.log(`Generated ${labs.length} labs plus index.html in ${OUT}`);

@@ -32,12 +32,13 @@ async def main() -> None:
         options={"response_format": CityInfo},
     )
 
-    if isinstance(result.value, CityInfo):
-        print(f"City: {result.value.city}")
-        print(f"Country: {result.value.country}")
-        print(f"Summary: {result.value.summary}")
-    else:
-        print(f"The response could not be parsed: {result.text}")
+
+    print(f"City: {result.value.city}")
+    print(" ")
+    print(f"Country: {result.value.country}")
+    print(" ")
+    print(f"Summary: {result.value.summary}")
+
 
 
 if __name__ == "__main__":

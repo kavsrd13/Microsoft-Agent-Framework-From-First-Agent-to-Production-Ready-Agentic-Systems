@@ -4,7 +4,7 @@ Independent, classroom-sized Python demos based on the current Microsoft Learn d
 
 ## Participant HTML labs
 
-Open [html_labs/index.html](html_labs/index.html) to use the complete participant workbook. The index links all 28 labs in the recommended teaching order. Participant-facing lab numbers are sequential even when the underlying source folder has a stable historical number. Each lab includes environment setup, required Azure resources and roles, code assembled in explained modules, validation checkpoints, a five-minute challenge, a three-question knowledge check, and its Microsoft documentation links.
+Open [html_labs/index.html](html_labs/index.html) to use the complete participant workbook. The index links all 26 labs in the recommended teaching order. Participant-facing lab numbers are sequential even when the underlying source folder has a stable historical number. Each lab includes environment setup, required Azure resources and roles, code assembled in explained modules, validation checkpoints, a five-minute challenge, a three-question knowledge check, and its Microsoft documentation links.
 
 The HTML pages work as local files and do not require a web server. Progress and knowledge-check state are stored only in the participant's browser.
 
@@ -69,9 +69,7 @@ Use the teaching order below. Folder numbers are stable identifiers, so the cour
 
 | Folder | Topic |
 |---|---|
-| `00_client` | Explicit `FoundryChatClient` and `GeminiChatClient` configuration |
-| `01_agent_creation` | Create and run an `Agent` |
-| `02_streaming` | Stream response updates |
+| `00_client`, `01_agent_creation`, `02_streaming` | Combined Lab 00: configure clients, create and run an `Agent`, then stream response updates |
 | `03_structured_output` | Pydantic response format |
 | `04_function_tools` | Local function tool |
 | `05_tool_approval` | Human approval before a tool runs |

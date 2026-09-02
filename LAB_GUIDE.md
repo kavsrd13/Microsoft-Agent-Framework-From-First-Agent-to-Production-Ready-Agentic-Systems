@@ -8,9 +8,7 @@ For participant delivery, start at [html_labs/index.html](html_labs/index.html).
 
 | Lab | Classroom story | Five-minute challenge |
 |---|---|---|
-| [00 Client](00_client/README.md) | Connect the same Agent Framework shape to Foundry or Gemini. | Change only the model setting and compare the two responses. |
-| [01 Agent creation](01_agent_creation/README.md) | Create a concise course assistant. | Change the instructions so the answer has exactly three bullets. |
-| [02 Streaming](02_streaming/README.md) | Display a response as it arrives. | Print a separator before and after the stream without buffering it. |
+| [00 First agent](00_client/README.md) | Configure Foundry, create and run an Agent, stream a second response, then optionally compare Gemini. | Give the complete-response and streaming agents the same prompt and compare delivery behavior. |
 | [03 Structured output](03_structured_output/README.md) | Turn a city recommendation into typed data. | Add one field to the Pydantic model and ask the agent to populate it. |
 
 ## Phase 2 - Tools, approval, state, and memory
