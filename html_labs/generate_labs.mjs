@@ -46,30 +46,21 @@ const labs = [
     knowledge: { concept: "Structured output is a typed response contract, not merely a formatting request in the prompt.", setup: "Install Pydantic and use a model deployment that supports structured responses.", outcome: "result.value is a validated CityInfo instance with named fields." },
   },
   {
-    id: "04", slug: "function-tools", folder: "04_function_tools", title: "Add a Function Tool",
-    phase: "Phase 2 · Tools, state, and memory", level: "200", duration: "40 min", resource: "Foundry",
-    why: "Tools let an agent obtain trusted data or perform an action. The model chooses the tool, while your Python function remains the authoritative implementation.",
-    objectives: ["Define a typed tool with @tool", "Describe arguments for the model", "Attach the tool and verify that it is called"],
-    concepts: [["Function tool", "A typed Python capability the model can request."], ["Tool schema", "Names, descriptions, and annotations guide tool selection."], ["Approval mode", "Controls whether execution must pause for a person."]],
-    packages: PYDANTIC, needsFoundry: true, resources: ["No external weather service is required; the tool returns deterministic classroom data."],
-    files: [{ source: "04_function_tools/demo.py", target: "04_function_tools/student_lab.py", label: "Build the weather tool agent", purpose: "Create a read-only tool and make it available to the Agent." }],
-    run: ["python .\\04_function_tools\\student_lab.py"],
-    expected: ["The agent uses get_weather for the Bengaluru question.", "The response contains the deterministic 24°C classroom value."],
-    challenge: "Return a different known forecast for one additional city and verify the tool argument.",
-    knowledge: { concept: "A function tool exposes trusted application logic that the model can select and call.", setup: "Use never_require only for a harmless read-only classroom function.", outcome: "The final answer contains data returned by get_weather rather than invented weather." },
-  },
-  {
-    id: "05", slug: "tool-approval", folder: "05_tool_approval", title: "Require Approval Before a Tool Runs",
-    phase: "Phase 2 · Tools, state, and memory", level: "200", duration: "45 min", resource: "Foundry",
-    why: "A side-effecting tool should not execute just because a model requested it. Approval creates an explicit human control point before the action occurs.",
-    objectives: ["Mark a tool as always requiring approval", "Inspect the proposed function call", "Approve or reject and resume the same session"],
-    concepts: [["Approval request", "Represents a proposed function call awaiting a decision."], ["Session", "Preserves the paused interaction while approval is collected."], ["Approval response", "Carries the human decision back into the agent run."]],
-    packages: CORE, needsFoundry: true, resources: ["The calendar action is simulated and does not modify a real calendar."],
-    files: [{ source: "05_tool_approval/demo.py", target: "05_tool_approval/student_lab.py", label: "Build the approval loop", purpose: "Pause before a simulated calendar change and resume with a decision." }],
-    run: ["python .\\05_tool_approval\\student_lab.py"],
-    expected: ["The proposed tool name and arguments appear before execution.", "Entering n prevents the EXECUTING line; entering y allows it."],
-    challenge: "Reject once, rerun, then approve. Explain the difference between model intent and authorized execution.",
-    knowledge: { concept: "Tool approval pauses a side-effecting call until a person explicitly permits it.", setup: "Keep the same AgentSession while sending the approval response.", outcome: "The execution marker appears only after an affirmative approval." },
+    id: "04", slug: "tools-and-approval", folder: "04_function_tools", title: "Add Function Tools and Human Approval",
+    phase: "Phase 2 · Tools, state, and memory", level: "200", duration: "80 min", resource: "Foundry",
+    why: "Tools let an agent obtain trusted data or request an action. This combined lab teaches the safe progression: first expose a harmless read-only tool, then introduce a human approval gate before a simulated side effect can run.",
+    objectives: ["Define a typed tool with @tool", "Attach a harmless read-only tool and verify that the agent calls it", "Mark a simulated side-effecting tool as always requiring approval", "Inspect, approve or reject the proposed call, and resume the same session"],
+    concepts: [["Function tool", "A typed Python capability the model can request."], ["Tool schema", "Names, descriptions, and annotations guide tool selection."], ["Approval mode", "Controls whether execution must pause for a person."], ["Approval request", "Represents a proposed function call awaiting a decision."], ["Session", "Preserves the paused interaction while approval is collected."], ["Approval response", "Carries the human decision back into the agent run."]],
+    packages: PYDANTIC, needsFoundry: true,
+    resources: ["No external weather service is required; the first tool returns deterministic classroom data.", "The calendar action in the approval exercise is simulated and does not modify a real calendar."],
+    files: [
+      { source: "04_function_tools/demo.py", target: "04_function_tools/student_weather_tool.py", label: "Part 1 — Build a harmless weather tool", purpose: "Create a read-only tool and verify that it gives the agent trusted deterministic data." },
+      { source: "05_tool_approval/demo.py", target: "05_tool_approval/student_approval_tool.py", label: "Part 2 — Add a human approval gate", purpose: "Pause a simulated calendar action, inspect the proposed call, and resume only after a human decision." },
+    ],
+    run: ["python .\\04_function_tools\\student_weather_tool.py", "python .\\05_tool_approval\\student_approval_tool.py"],
+    expected: ["The weather agent uses get_weather for the Bengaluru question and returns the deterministic 24°C classroom value.", "The approval program shows the proposed tool name and arguments before execution.", "Entering n prevents the EXECUTING line; entering y allows the simulated action."],
+    challenge: "Add one known city to the read-only weather tool, then reject and approve the simulated calendar action in separate runs. Explain why the two tools have different approval requirements.",
+    knowledge: { concept: "A function tool exposes trusted application logic, while approval gates human authorization for actions with side effects.", setup: "Use never_require only for the harmless read-only classroom function and keep the same AgentSession while sending an approval response.", outcome: "The weather response uses tool output, while the simulated action executes only after affirmative approval." },
   },
   {
     id: "06", slug: "sessions", folder: "06_sessions", title: "Maintain a Multi-turn Session",
@@ -441,7 +432,7 @@ const labs = [
   },
 ];
 
-const teachingOrder = ["00", "03", "04", "05", "13", "27", "06", "07", "08", "09", "10", "11", "22", "12", "20", "21", "14", "15", "16", "17", "18", "19", "23", "24", "25", "26"];
+const teachingOrder = ["00", "03", "04", "13", "27", "06", "07", "08", "09", "10", "11", "22", "12", "20", "21", "14", "15", "16", "17", "18", "19", "23", "24", "25", "26"];
 
 function displayId(lab) {
   return String(teachingOrder.indexOf(lab.id)).padStart(2, "0");
@@ -604,7 +595,7 @@ function renderFiles(lab, sources) {
       moduleNumber += 1;
       return html;
     }).join("");
-    return `<section class="file-build"><h3>${escapeHtml(file.label)}</h3><p>${escapeHtml(file.purpose)}</p><div class="file-target"><strong>Create:</strong> <code>${escapeHtml(file.target)}</code> <a href="../${escapeHtml(file.source)}" target="_blank">View supplied reference file</a></div><p>Paste the following modules into the target file in the order shown.</p>${blocks}</section>`;
+    return `<section class="file-build"><h3>${escapeHtml(file.label)}</h3><p>${escapeHtml(file.purpose)}</p><div class="file-target"><strong>Create:</strong> <code>${escapeHtml(file.target)}</code></div><p>Paste the following modules into the target file in the order shown.</p>${blocks}</section>`;
   }).join("");
   const support = (lab.support || []).length
     ? `<h3>Supplied supporting files</h3><p>These files are already part of the repository. Inspect or reuse them rather than retyping them.</p><ul>${lab.support.map((item) => `<li><a href="../${escapeHtml(item)}" target="_blank"><code>${escapeHtml(item)}</code></a></li>`).join("")}</ul>`

@@ -34,16 +34,12 @@ async def main() -> None:
     session = agent.create_session()
     result = await agent.run("Add a dentist appointment on September 15.", session=session)
 
-    while result.user_input_requests:
-        request = result.user_input_requests[0]
-        if request.function_call is None:
-            break
-
-        print(f"Approval required for: {request.function_call.name}")
-        print(f"Arguments: {request.function_call.arguments}")
-        decision = await asyncio.to_thread(input, "Approve? (y/n): ")
-        response = request.to_function_approval_response(decision.strip().lower() == "y")
-        result = await agent.run(Message("user", [response]), session=session)
+    request = result.user_input_requests[0]
+    print(f"Approval required for: {request.function_call.name}")
+    print(f"Arguments: {request.function_call.arguments}")
+    decision = input("Approve? (y/n): ")
+    response = request.to_function_approval_response(decision.strip().lower() == "y")
+    result = await agent.run(Message("user", [response]), session=session)
 
     print(f"Agent: {result.text}")
 

@@ -4,7 +4,7 @@ Independent, classroom-sized Python demos based on the current Microsoft Learn d
 
 ## Participant HTML labs
 
-Open [html_labs/index.html](html_labs/index.html) to use the complete participant workbook. The index links all 26 labs in the recommended teaching order. Participant-facing lab numbers are sequential even when the underlying source folder has a stable historical number. Each lab includes environment setup, required Azure resources and roles, code assembled in explained modules, validation checkpoints, a five-minute challenge, a three-question knowledge check, and its Microsoft documentation links.
+Open [html_labs/index.html](html_labs/index.html) to use the complete participant workbook. The index links all 25 labs in the recommended teaching order. Participant-facing lab numbers are sequential even when the underlying source folder has a stable historical number. Each lab includes environment setup, required Azure resources and roles, code assembled in explained modules, validation checkpoints, a five-minute challenge, a three-question knowledge check, and its Microsoft documentation links.
 
 The HTML pages work as local files and do not require a web server. Progress and knowledge-check state are stored only in the participant's browser.
 
@@ -71,8 +71,7 @@ Use the teaching order below. Folder numbers are stable identifiers, so the cour
 |---|---|
 | `00_client`, `01_agent_creation`, `02_streaming` | Combined Lab 00: configure clients, create and run an `Agent`, then stream response updates |
 | `03_structured_output` | Pydantic response format |
-| `04_function_tools` | Local function tool |
-| `05_tool_approval` | Human approval before a tool runs |
+| `04_function_tools`, `05_tool_approval` | Combined Lab 02: local function tools and human approval before a simulated action |
 | `13_mcp` | Build and inspect a Python MCP server, then validate the shared authenticated Azure deployment; optional MCP Apps instructor demo |
 | `27_mcp_agent_client` | Use the shared authenticated MCP server from an Agent Framework agent |
 | `06_sessions` | Multi-turn `AgentSession` |

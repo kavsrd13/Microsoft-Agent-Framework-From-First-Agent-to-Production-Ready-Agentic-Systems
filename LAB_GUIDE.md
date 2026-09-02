@@ -15,8 +15,7 @@ For participant delivery, start at [html_labs/index.html](html_labs/index.html).
 
 | Lab | Classroom story | Five-minute challenge |
 |---|---|---|
-| [04 Function tools](04_function_tools/README.md) | Let a weather agent call trusted local code. | Add one more known city to the tool. |
-| [05 Tool approval](05_tool_approval/README.md) | Pause before a calendar-changing action. | Reject the request once, then explain why approval matters. |
+| [04 Tools and approval](04_function_tools/README.md) | Let a weather agent call trusted local code, then pause a simulated calendar action for human approval. | Add a known city, then compare rejecting and approving the action. |
 | [13 MCP server](13_mcp/README.md) | Build a small change-risk MCP server, test it locally, then inspect the shared authenticated Azure deployment. | Compare one local and one remote fictional change record. |
 | [27 MCP agent client](27_mcp_agent_client/README.md) | Let a Foundry-backed Agent Framework agent use the shared live MCP server. | Change the requested change ID and verify the answer remains grounded in tool output. |
 | [06 Sessions](06_sessions/README.md) | Remember a learner preference across turns. | Start a fresh session and observe what is no longer remembered. |
