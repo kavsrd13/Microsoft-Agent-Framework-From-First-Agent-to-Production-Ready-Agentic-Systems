@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab 23 — Collaborate in a Group Chat</title><link rel="stylesheet" href="assets/lab.css"></head>
+<body data-lab-id="19">
+<main class="exercise">
+  <header class="lab-header"><a class="back-link" href="index.html">← Course lab index</a><h1>Lab 23: Collaborate in a Group Chat</h1><p class="lab-header-desc">Group chat supports iterative peer improvement when participants need to see and respond to one another rather than work independently.</p><div class="lab-header-meta"><span class="lab-meta-pill">Level 300</span><span class="lab-meta-pill">60 min</span><span class="lab-meta-pill">Phase 5 · Workflows and multi-agent patterns</span><span class="lab-meta-pill">Foundry</span></div></header>
+  <nav class="page-nav" aria-label="Lab sections"><a href="#details">Details</a><a href="#readiness">Setup</a><a href="#resources">Resources</a><a href="#build">Build</a><a href="#run">Validate</a><a href="#knowledge-check">Knowledge check</a></nav>
+  <h2 id="details">Lab details</h2>
+  <table><thead><tr><th>Level</th><th>Persona</th><th>Duration</th><th>Primary resource</th></tr></thead><tbody><tr><td>300</td><td>Python developer / solution architect</td><td>60 min</td><td>Foundry</td></tr></tbody></table>
+  <h2>Why this matters</h2><p>Group chat supports iterative peer improvement when participants need to see and respond to one another rather than work independently.</p>
+  <h2>Learning objectives</h2><ul><li>Create a deterministic selector</li><li>Configure expert, verifier, and clarifier roles</li><li>Bound the conversation with a termination rule</li></ul>
+  <h2>Core concepts</h2><table><thead><tr><th>Concept</th><th>What it means in this lab</th></tr></thead><tbody><tr><td><strong>Group chat</strong></td><td>Maintains a shared multi-participant conversation.</td></tr><tr><td><strong>Selection function</strong></td><td>Chooses the next participant.</td></tr><tr><td><strong>Bounded iteration</strong></td><td>Prevents unending agent discussion.</td></tr></tbody></table>
+
+    <h2 id="readiness">Start here: end-to-end readiness</h2>
+    <section class="notice"><strong>Use the project root.</strong> Run every command from <code>microsoft-agent-framework-demos</code> unless the lab explicitly changes folders. Commands use PowerShell on Windows.</section>
+    <h3>Step 1 — Verify prerequisites</h3>
+    <ul class="checklist">
+      <li><label><input type="checkbox" data-progress="19-python"> Python 3.12 is installed.</label></li>
+      <li><label><input type="checkbox" data-progress="19-cli"> Azure CLI is installed.</label></li>
+      <li><label><input type="checkbox" data-progress="19-editor"> VS Code or another Python editor is available.</label></li>
+      <li><label><input type="checkbox" data-progress="19-access"> Required Azure access described below is available.</label></li>
+    </ul>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python --version
+az --version</code></pre></div>
+    <h3>Step 2 — Create and activate the virtual environment</h3>
+    <p>Create one course environment in the repository root. Reuse it for later labs.</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m venv venv
+.\venv\Scripts\Activate.ps1</code></pre></div>
+    <p>If PowerShell blocks activation, allow scripts only for the current process and activate again:</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\venv\Scripts\Activate.ps1</code></pre></div>
+    <h3>Step 3 — Install the libraries</h3>
+    <p>The repository requirements are pinned so every lab uses the same tested SDK surface.</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip check</code></pre></div>
+    <details><summary>Running only this lab outside the course repository</summary><p>Install these direct packages:</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install agent-framework-core==1.15.0 agent-framework-foundry==1.11.0 azure-identity==1.25.3 python-dotenv==1.2.3 agent-framework-orchestrations==1.1.1</code></pre></div></details>
+    <h3>Step 4 — Create the environment file</h3>
+    <p>Create <code>.env</code> once from the safe template, then replace placeholders. Never commit <code>.env</code>.</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>Copy-Item .env.example .env
+notepad .env</code></pre></div>
+    <div class="code-shell"><div class="code-head"><span>Environment</span><button class="copy-button" type="button">Copy</button></div><pre><code>FOUNDRY_PROJECT_ENDPOINT=https://&lt;foundry-resource&gt;.services.ai.azure.com/api/projects/&lt;project&gt;
+FOUNDRY_MODEL=&lt;deployed-model-name&gt;</code></pre></div>
+    <h3>Step 5 — Authenticate for classroom development</h3><p>Sign in with the identity that has access to the Foundry project and any additional Azure resources.</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>az login
+az account show --query &quot;{subscription:name, tenant:tenantId}&quot; -o table</code></pre></div>
+
+  <h2 id="resources">Create or verify required resources</h2><ol><li>In Microsoft Foundry, create or select a project, deploy the instructor-approved chat model, and copy its project endpoint and deployment name into <code>.env</code>.</li><li>Grant the learner the project-level role required to invoke the deployment. For a shared class, provision this before the lab.</li><li>This lab makes several sequential model calls; verify classroom model quota.</li></ol><section class="warning"><strong>Cost and cleanup:</strong> Azure Search, models, hosted agents, storage, browser workspaces, and optimization jobs can incur charges. Use instructor-provided resources where possible and follow your organization's cleanup policy after class.</section>
+  <h2 id="build">Build the lab in modules</h2><section class="file-build"><h3>Build peer-review group chat</h3><p>Rotate through an expert, safety verifier, and clarity reviewer.</p><div class="file-target"><strong>Create:</strong> <code>19_multi_agent_group_chat/student_lab.py</code> <a href="../19_multi_agent_group_chat/demo.py" target="_blank">View supplied reference file</a></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">1</div><div class="step-body"><h4>Import the required libraries</h4><p>Add only the SDK types used by this part of the lab.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import asyncio
+import os
+from typing import cast
+
+from agent_framework import Agent, Message
+from agent_framework.foundry import FoundryChatClient
+from agent_framework.orchestrations import GroupChatBuilder, GroupChatState
+from azure.identity import AzureCliCredential
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+def round_robin_selector(state: GroupChatState) -&gt; str:
+    participant_names = list(state.participants.keys())
+    return participant_names[state.current_round % len(participant_names)]</code></pre></div></div></article><article class="step-card"><div class="step-number">2</div><div class="step-body"><h4>Load configuration</h4><p>Read endpoints, model names, and non-secret settings from the project environment.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>async def main() -&gt; None:
+    client = FoundryChatClient(
+        project_endpoint=os.environ[&quot;FOUNDRY_PROJECT_ENDPOINT&quot;],
+        model=os.environ[&quot;FOUNDRY_MODEL&quot;],
+        credential=AzureCliCredential(),
+    )
+    expert = Agent(
+        client=client,
+        name=&quot;PythonExpert&quot;,
+        instructions=&quot;Answer the Python question, then improve your answer using peer feedback.&quot;,
+    )
+    verifier = Agent(
+        client=client,
+        name=&quot;Verifier&quot;,
+        instructions=&quot;Review the expert's answer for technically correct but risky advice.&quot;,
+    )
+    clarifier = Agent(
+        client=client,
+        name=&quot;Clarifier&quot;,
+        instructions=&quot;Identify jargon and suggest a clearer beginner explanation.&quot;,
+    )</code></pre></div></div></article><article class="step-card"><div class="step-number">3</div><div class="step-body"><h4>Run and inspect the scenario</h4><p>Execute the lab task and expose the result needed for validation.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    workflow_instance = GroupChatBuilder(
+        participants=[expert, verifier, clarifier],
+        selection_func=round_robin_selector,
+        termination_condition=lambda conversation: len(conversation) &gt;= 5,
+    ).build()
+
+    result = await workflow_instance.run(&quot;How does a Python Protocol differ from an abstract base class?&quot;)
+    for output in result.get_outputs():
+        if isinstance(output, list):
+            for message in cast(list[Message], output):
+                print(f&quot;\n[{message.author_name or message.role}]\n{message.text}&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    asyncio.run(main())</code></pre></div></div></article></section>
+  <h2 id="run">Run and validate</h2><h3>Run the completed files</h3><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python .\19_multi_agent_group_chat\student_lab.py</code></pre></div><h3>Expected result</h3><ul><li>Messages rotate among the three named participants.</li><li>The conversation stops after the configured message count.</li></ul><section class="checkpoint"><strong>Completion checkpoint:</strong> Do not mark the lab complete until the observed output matches these conditions.</section><h3>Five-minute challenge</h3><p>Change the clarifier into an accessibility reviewer and compare the final transcript.</p>
+  <h2 id="knowledge-check">Knowledge check</h2><div class="knowledge-list"><section class="question" data-answer="1"><div class="question-number">1</div><div class="question-body"><h3>Which statement best describes the central concept in Lab 23?</h3><label class="option"><input type="radio" name="19-q0" value="0"><span>It automatically deploys every Azure resource without configuration.</span></label><label class="option"><input type="radio" name="19-q0" value="1"><span>Group chat lets several agents iteratively improve work in one shared transcript.</span></label><label class="option"><input type="radio" name="19-q0" value="2"><span>It removes the need for model authentication and authorization.</span></label><label class="option"><input type="radio" name="19-q0" value="3"><span>It stores provider credentials directly in Python source.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="1"><div class="question-number">2</div><div class="question-body"><h3>Which setup choice matches this lab?</h3><label class="option"><input type="radio" name="19-q1" value="0"><span>Use real customer data before validating the classroom scenario.</span></label><label class="option"><input type="radio" name="19-q1" value="1"><span>Use a deterministic selector and a strict termination condition for a classroom demo.</span></label><label class="option"><input type="radio" name="19-q1" value="2"><span>Hard-code every credential so the code is self-contained.</span></label><label class="option"><input type="radio" name="19-q1" value="3"><span>Skip role assignments because successful sign-in grants every permission.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="1"><div class="question-number">3</div><div class="question-body"><h3>What evidence proves that the lab worked?</h3><label class="option"><input type="radio" name="19-q2" value="0"><span>The model returned any fluent answer, regardless of the expected behavior.</span></label><label class="option"><input type="radio" name="19-q2" value="1"><span>The transcript shows bounded, multi-round contributions from expert, verifier, and clarifier.</span></label><label class="option"><input type="radio" name="19-q2" value="2"><span>The Python file exists, even if it was not run.</span></label><label class="option"><input type="radio" name="19-q2" value="3"><span>The script compiled, but its output was not inspected.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section></div>
+  <h2>Summary of learning</h2><ul><li>Create a deterministic selector</li><li>Configure expert, verifier, and clarifier roles</li><li>Bound the conversation with a termination rule</li></ul>
+  <h2 id="sources">Microsoft documentation and sample references</h2><ul><li><a href="https://learn.microsoft.com/en-us/agent-framework/workflows/orchestrations/" target="_blank" rel="noreferrer">Workflow orchestration patterns</a></li><li><a href="https://github.com/microsoft/agent-framework/blob/main/python/samples/03-workflows/orchestrations/group_chat_simple_selector.py" target="_blank" rel="noreferrer">official group-chat selector sample</a></li><li><a href="https://learn.microsoft.com/en-us/agent-framework/" target="_blank" rel="noreferrer">Microsoft Agent Framework documentation</a></li></ul><section class="notice"><strong>Version boundary:</strong> The lab code uses the versions pinned in the root <code>requirements.txt</code>. Preview documentation can move ahead of those packages, so upgrade only after rerunning the validation suite.</section>
+  <div class="completion"><label><input type="checkbox" data-lab-complete="19"> Mark Lab 23 complete</label></div>
+  <nav class="lab-pager"><a href="18-handoff.html">← Lab 22: Route Work with Handoff Orchestration</a><a href="23-hosted-agent.html">Lab 24: Host an Agent Behind the Responses API →</a></nav>
+</main><script src="assets/lab.js"></script></body></html>

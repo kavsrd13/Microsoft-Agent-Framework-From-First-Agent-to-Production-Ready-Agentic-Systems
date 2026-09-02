@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab 00 — Foundry and Gemini Chat Clients</title><link rel="stylesheet" href="assets/lab.css"></head>
+<body data-lab-id="00">
+<main class="exercise">
+  <header class="lab-header"><a class="back-link" href="index.html">← Course lab index</a><h1>Lab 00: Foundry and Gemini Chat Clients</h1><p class="lab-header-desc">A client is the model-provider boundary. Seeing Foundry and Gemini side by side makes it clear that the Agent abstraction stays stable while authentication and model configuration change.</p><div class="lab-header-meta"><span class="lab-meta-pill">Level 100</span><span class="lab-meta-pill">50 min</span><span class="lab-meta-pill">Phase 1 · Clients and agent responses</span><span class="lab-meta-pill">Foundry + optional Gemini</span></div></header>
+  <nav class="page-nav" aria-label="Lab sections"><a href="#details">Details</a><a href="#readiness">Setup</a><a href="#resources">Resources</a><a href="#build">Build</a><a href="#run">Validate</a><a href="#knowledge-check">Knowledge check</a></nav>
+  <h2 id="details">Lab details</h2>
+  <table><thead><tr><th>Level</th><th>Persona</th><th>Duration</th><th>Primary resource</th></tr></thead><tbody><tr><td>100</td><td>Python developer / solution architect</td><td>50 min</td><td>Foundry + optional Gemini</td></tr></tbody></table>
+  <h2>Why this matters</h2><p>A client is the model-provider boundary. Seeing Foundry and Gemini side by side makes it clear that the Agent abstraction stays stable while authentication and model configuration change.</p>
+  <h2>Learning objectives</h2><ul><li>Create FoundryChatClient with AzureCliCredential</li><li>Create GeminiChatClient with an API key kept in .env</li><li>Compare provider configuration without changing the Agent programming model</li></ul>
+  <h2>Core concepts</h2><table><thead><tr><th>Concept</th><th>What it means in this lab</th></tr></thead><tbody><tr><td><strong>Chat client</strong></td><td>Connects Agent Framework to a model provider.</td></tr><tr><td><strong>AzureCliCredential</strong></td><td>Uses the identity established by az login for classroom access.</td></tr><tr><td><strong>Provider portability</strong></td><td>The Agent interface stays consistent even when the model provider changes.</td></tr></tbody></table>
+
+    <h2 id="readiness">Start here: end-to-end readiness</h2>
+    <section class="notice"><strong>Use the project root.</strong> Run every command from <code>microsoft-agent-framework-demos</code> unless the lab explicitly changes folders. Commands use PowerShell on Windows.</section>
+    <h3>Step 1 — Verify prerequisites</h3>
+    <ul class="checklist">
+      <li><label><input type="checkbox" data-progress="00-python"> Python 3.12 is installed.</label></li>
+      <li><label><input type="checkbox" data-progress="00-cli"> Azure CLI is installed.</label></li>
+      <li><label><input type="checkbox" data-progress="00-editor"> VS Code or another Python editor is available.</label></li>
+      <li><label><input type="checkbox" data-progress="00-access"> Required Azure access described below is available.</label></li>
+    </ul>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python --version
+az --version</code></pre></div>
+    <h3>Step 2 — Create and activate the virtual environment</h3>
+    <p>Create one course environment in the repository root. Reuse it for later labs.</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m venv venv
+.\venv\Scripts\Activate.ps1</code></pre></div>
+    <p>If PowerShell blocks activation, allow scripts only for the current process and activate again:</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\venv\Scripts\Activate.ps1</code></pre></div>
+    <h3>Step 3 — Install the libraries</h3>
+    <p>The repository requirements are pinned so every lab uses the same tested SDK surface.</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip check</code></pre></div>
+    <details><summary>Running only this lab outside the course repository</summary><p>Install these direct packages:</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install agent-framework-core==1.15.0 agent-framework-foundry==1.11.0 azure-identity==1.25.3 python-dotenv==1.2.3 agent-framework-gemini==1.0.0b260813</code></pre></div></details>
+    <h3>Step 4 — Create the environment file</h3>
+    <p>Create <code>.env</code> once from the safe template, then replace placeholders. Never commit <code>.env</code>.</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>Copy-Item .env.example .env
+notepad .env</code></pre></div>
+    <div class="code-shell"><div class="code-head"><span>Environment</span><button class="copy-button" type="button">Copy</button></div><pre><code>FOUNDRY_PROJECT_ENDPOINT=https://&lt;foundry-resource&gt;.services.ai.azure.com/api/projects/&lt;project&gt;
+FOUNDRY_MODEL=&lt;deployed-model-name&gt;
+GEMINI_API_KEY=&lt;your Google AI Studio key&gt;
+GEMINI_MODEL=gemini-3.6-flash</code></pre></div>
+    <h3>Step 5 — Authenticate for classroom development</h3><p>Sign in with the identity that has access to the Foundry project and any additional Azure resources.</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>az login
+az account show --query &quot;{subscription:name, tenant:tenantId}&quot; -o table</code></pre></div>
+
+  <h2 id="resources">Create or verify required resources</h2><ol><li>In Microsoft Foundry, create or select a project, deploy the instructor-approved chat model, and copy its project endpoint and deployment name into <code>.env</code>.</li><li>Grant the learner the project-level role required to invoke the deployment. For a shared class, provision this before the lab.</li><li>Use an instructor-provided Foundry project and model deployment, or create them in Microsoft Foundry.</li><li>For the optional Gemini use case, create a Google AI Studio API key and place it only in the git-ignored .env file.</li></ol><section class="warning"><strong>Cost and cleanup:</strong> Azure Search, models, hosted agents, storage, browser workspaces, and optimization jobs can incur charges. Use instructor-provided resources where possible and follow your organization's cleanup policy after class.</section>
+  <h2 id="build">Build the lab in modules</h2><section class="file-build"><h3>Use case 1 — Microsoft Foundry client</h3><p>Build the explicit classroom authentication path.</p><div class="file-target"><strong>Create:</strong> <code>00_client/student_foundry_client.py</code> <a href="../00_client/demo.py" target="_blank">View supplied reference file</a></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">1</div><div class="step-body"><h4>Import the required libraries</h4><p>Add only the SDK types used by this part of the lab.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import asyncio
+import os
+
+from agent_framework.foundry import FoundryChatClient
+from azure.identity import AzureCliCredential
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+async def main() -&gt; None:
+    # Explicit settings make the Foundry endpoint, model, and credential visible in a classroom demo.
+    client = FoundryChatClient(
+        project_endpoint=os.environ[&quot;FOUNDRY_PROJECT_ENDPOINT&quot;],
+        model=os.environ[&quot;FOUNDRY_MODEL&quot;],
+        credential=AzureCliCredential(),
+    )
+
+    # Every supported chat client can create the standard Agent abstraction.
+    agent = client.as_agent(
+        name=&quot;ClientDemoAgent&quot;,
+        instructions=&quot;You are a helpful assistant. Answer in one short sentence.&quot;,
+    )
+    result = await agent.run(&quot;What is Microsoft Agent Framework?&quot;)
+    print(result.text)</code></pre></div></div></article><article class="step-card"><div class="step-number">2</div><div class="step-body"><h4>Run and inspect the scenario</h4><p>Execute the lab task and expose the result needed for validation.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>if __name__ == &quot;__main__&quot;:
+    asyncio.run(main())</code></pre></div></div></article></section><section class="file-build"><h3>Use case 2 — Gemini client</h3><p>Change the provider while preserving the Agent shape.</p><div class="file-target"><strong>Create:</strong> <code>00_client/student_gemini_client.py</code> <a href="../00_client/gemini_demo.py" target="_blank">View supplied reference file</a></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">3</div><div class="step-body"><h4>Import the required libraries</h4><p>Add only the SDK types used by this part of the lab.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import asyncio
+import os
+from agent_framework import Agent
+from agent_framework.gemini import GeminiChatClient
+from dotenv import load_dotenv
+from google import genai
+
+load_dotenv()
+
+
+async def main() -&gt; None:
+    api_key = os.environ.get(&quot;GEMINI_API_KEY&quot;)
+    if not api_key:
+        raise RuntimeError(&quot;Add GEMINI_API_KEY to the project .env file before running this demo.&quot;)
+
+
+    # Explicit settings make the Gemini model and authentication method visible in class.
+    client = GeminiChatClient(
+        api_key=api_key,
+        model=os.environ.get(&quot;GEMINI_MODEL&quot;),
+    )</code></pre></div></div></article><article class="step-card"><div class="step-number">4</div><div class="step-body"><h4>Create the client and agent</h4><p>Connect the configured client to clear agent instructions and optional tools or context.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    agent = Agent(
+        client=client,
+        name=&quot;GeminiClientDemoAgent&quot;,
+        instructions=&quot;You are a helpful assistant. Answer in one short sentence.&quot;,
+    )
+
+    result = await agent.run(&quot;What is Microsoft Agent Framework?&quot;)
+    print(result.text)
+
+
+if __name__ == &quot;__main__&quot;:
+    asyncio.run(main())</code></pre></div></div></article></section>
+  <h2 id="run">Run and validate</h2><h3>Run the completed files</h3><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python .\00_client\student_foundry_client.py
+python .\00_client\student_gemini_client.py</code></pre></div><h3>Expected result</h3><ul><li>Both programs return a short definition of Microsoft Agent Framework.</li><li>No credential value is printed or stored in a Python file.</li></ul><section class="checkpoint"><strong>Completion checkpoint:</strong> Do not mark the lab complete until the observed output matches these conditions.</section><h3>Five-minute challenge</h3><p>Change only the model setting and instructions, then compare response style and latency.</p>
+  <h2 id="knowledge-check">Knowledge check</h2><div class="knowledge-list"><section class="question" data-answer="0"><div class="question-number">1</div><div class="question-body"><h3>Which statement best describes the central concept in Lab 00?</h3><label class="option"><input type="radio" name="00-q0" value="0"><span>The chat client is the provider-specific boundary while Agent remains the common abstraction.</span></label><label class="option"><input type="radio" name="00-q0" value="1"><span>It removes the need for model authentication and authorization.</span></label><label class="option"><input type="radio" name="00-q0" value="2"><span>It stores provider credentials directly in Python source.</span></label><label class="option"><input type="radio" name="00-q0" value="3"><span>It automatically deploys every Azure resource without configuration.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="0"><div class="question-number">2</div><div class="question-body"><h3>Which setup choice matches this lab?</h3><label class="option"><input type="radio" name="00-q1" value="0"><span>Keep the Gemini key in .env and use AzureCliCredential after az login for Foundry.</span></label><label class="option"><input type="radio" name="00-q1" value="1"><span>Hard-code every credential so the code is self-contained.</span></label><label class="option"><input type="radio" name="00-q1" value="2"><span>Skip role assignments because successful sign-in grants every permission.</span></label><label class="option"><input type="radio" name="00-q1" value="3"><span>Use real customer data before validating the classroom scenario.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="0"><div class="question-number">3</div><div class="question-body"><h3>What evidence proves that the lab worked?</h3><label class="option"><input type="radio" name="00-q2" value="0"><span>Both clients successfully create an Agent and return a response.</span></label><label class="option"><input type="radio" name="00-q2" value="1"><span>The Python file exists, even if it was not run.</span></label><label class="option"><input type="radio" name="00-q2" value="2"><span>The script compiled, but its output was not inspected.</span></label><label class="option"><input type="radio" name="00-q2" value="3"><span>The model returned any fluent answer, regardless of the expected behavior.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section></div>
+  <h2>Summary of learning</h2><ul><li>Create FoundryChatClient with AzureCliCredential</li><li>Create GeminiChatClient with an API key kept in .env</li><li>Compare provider configuration without changing the Agent programming model</li></ul>
+  <h2 id="sources">Microsoft documentation and sample references</h2><ul><li><a href="https://learn.microsoft.com/en-us/agent-framework/agents/" target="_blank" rel="noreferrer">Agent types and clients</a></li><li><a href="https://github.com/microsoft/agent-framework/tree/main/python/samples/02-agents/providers/foundry" target="_blank" rel="noreferrer">official Foundry provider samples</a></li><li><a href="https://learn.microsoft.com/en-us/agent-framework/integrations/by-component/model-providers/google-gemini" target="_blank" rel="noreferrer">Google Gemini integration</a></li><li><a href="https://learn.microsoft.com/en-us/agent-framework/" target="_blank" rel="noreferrer">Microsoft Agent Framework documentation</a></li></ul><section class="notice"><strong>Version boundary:</strong> The lab code uses the versions pinned in the root <code>requirements.txt</code>. Preview documentation can move ahead of those packages, so upgrade only after rerunning the validation suite.</section>
+  <div class="completion"><label><input type="checkbox" data-lab-complete="00"> Mark Lab 00 complete</label></div>
+  <nav class="lab-pager"><span></span><a href="01-agent-creation.html">Lab 01: Create and Run Your First Agent →</a></nav>
+</main><script src="assets/lab.js"></script></body></html>

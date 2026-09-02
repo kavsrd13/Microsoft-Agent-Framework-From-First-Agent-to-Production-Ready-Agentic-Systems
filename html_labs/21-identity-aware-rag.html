@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab 17 — Enforce Identity-aware RAG</title><link rel="stylesheet" href="assets/lab.css"></head>
+<body data-lab-id="21">
+<main class="exercise">
+  <header class="lab-header"><a class="back-link" href="index.html">← Course lab index</a><h1>Lab 17: Enforce Identity-aware RAG</h1><p class="lab-header-desc">Identity-aware RAG filters documents inside Azure AI Search before grounding reaches the model. Prompt instructions alone cannot enforce document authorization.</p><div class="lab-header-meta"><span class="lab-meta-pill">Level 400</span><span class="lab-meta-pill">120 min</span><span class="lab-meta-pill">Phase 4 · RAG progression</span><span class="lab-meta-pill">Foundry + Search ACL preview</span></div></header>
+  <nav class="page-nav" aria-label="Lab sections"><a href="#details">Details</a><a href="#readiness">Setup</a><a href="#resources">Resources</a><a href="#build">Build</a><a href="#run">Validate</a><a href="#knowledge-check">Knowledge check</a></nav>
+  <h2 id="details">Lab details</h2>
+  <table><thead><tr><th>Level</th><th>Persona</th><th>Duration</th><th>Primary resource</th></tr></thead><tbody><tr><td>400</td><td>Python developer / solution architect</td><td>120 min</td><td>Foundry + Search ACL preview</td></tr></tbody></table>
+  <h2>Why this matters</h2><p>Identity-aware RAG filters documents inside Azure AI Search before grounding reaches the model. Prompt instructions alone cannot enforce document authorization.</p>
+  <h2>Learning objectives</h2><ul><li>Create permission-filter fields and upload ACL metadata</li><li>Pass a Search-scoped end-user token at query time</li><li>Prove allowed and denied retrieval paths</li></ul>
+  <h2>Core concepts</h2><table><thead><tr><th>Concept</th><th>What it means in this lab</th></tr></thead><tbody><tr><td><strong>Service credential</strong></td><td>Authenticates the application to the Search service.</td></tr><tr><td><strong>Query-source identity</strong></td><td>Represents the end user whose document access is evaluated.</td></tr><tr><td><strong>Permission filter</strong></td><td>Compares user and group object IDs before returning content.</td></tr></tbody></table>
+
+    <h2 id="readiness">Start here: end-to-end readiness</h2>
+    <section class="notice"><strong>Use the project root.</strong> Run every command from <code>microsoft-agent-framework-demos</code> unless the lab explicitly changes folders. Commands use PowerShell on Windows.</section>
+    <h3>Step 1 — Verify prerequisites</h3>
+    <ul class="checklist">
+      <li><label><input type="checkbox" data-progress="21-python"> Python 3.12 is installed.</label></li>
+      <li><label><input type="checkbox" data-progress="21-cli"> Azure CLI is installed.</label></li>
+      <li><label><input type="checkbox" data-progress="21-editor"> VS Code or another Python editor is available.</label></li>
+      <li><label><input type="checkbox" data-progress="21-access"> Required Azure access described below is available.</label></li>
+    </ul>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python --version
+az --version</code></pre></div>
+    <h3>Step 2 — Create and activate the virtual environment</h3>
+    <p>Create one course environment in the repository root. Reuse it for later labs.</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m venv venv
+.\venv\Scripts\Activate.ps1</code></pre></div>
+    <p>If PowerShell blocks activation, allow scripts only for the current process and activate again:</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\venv\Scripts\Activate.ps1</code></pre></div>
+    <h3>Step 3 — Install the libraries</h3>
+    <p>The repository requirements are pinned so every lab uses the same tested SDK surface.</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip check</code></pre></div>
+    <details><summary>Running only this lab outside the course repository</summary><p>Install these direct packages:</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install agent-framework-core==1.15.0 agent-framework-foundry==1.11.0 azure-identity==1.25.3 python-dotenv==1.2.3 agent-framework-azure-ai-search==1.0.0b260813 azure-search-documents==12.1.0b1</code></pre></div></details>
+    <h3>Step 4 — Create the environment file</h3>
+    <p>Create <code>.env</code> once from the safe template, then replace placeholders. Never commit <code>.env</code>.</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>Copy-Item .env.example .env
+notepad .env</code></pre></div>
+    <div class="code-shell"><div class="code-head"><span>Environment</span><button class="copy-button" type="button">Copy</button></div><pre><code>FOUNDRY_PROJECT_ENDPOINT=https://&lt;foundry-resource&gt;.services.ai.azure.com/api/projects/&lt;project&gt;
+FOUNDRY_MODEL=&lt;deployed-model-name&gt;
+AZURE_SEARCH_SECURE_INDEX_NAME=travel-secure-demo
+AZURE_SEARCH_SECURE_KNOWLEDGE_SOURCE_NAME=travel-secure-source
+AZURE_SEARCH_SECURE_KNOWLEDGE_BASE_NAME=travel-secure-kb
+DEMO_FINANCE_GROUP_OBJECT_ID=&lt;optional Entra group object ID&gt;</code></pre></div>
+    <h3>Step 5 — Authenticate for classroom development</h3><p>Sign in with the identity that has access to the Foundry project and any additional Azure resources.</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>az login
+az account show --query &quot;{subscription:name, tenant:tenantId}&quot; -o table</code></pre></div>
+
+  <h2 id="resources">Create or verify required resources</h2><ol><li>In Microsoft Foundry, create or select a project, deploy the instructor-approved chat model, and copy its project endpoint and deployment name into <code>.env</code>.</li><li>Grant the learner the project-level role required to invoke the deployment. For a shared class, provision this before the lab.</li><li>Complete Lab 20 infrastructure and role setup first.</li><li>Use stable Entra object IDs in UserIds and GroupIds; never use email addresses as ACL values.</li><li>The pinned beta SDK exposes query_source_authorization in the tested code. Current Learn examples may show x_ms_query_source_authorization; upgrade only after revalidation.</li><li>For a two-user demonstration, use a real finance group and compare a member with a nonmember.</li></ol><section class="warning"><strong>Cost and cleanup:</strong> Azure Search, models, hosted agents, storage, browser workspaces, and optimization jobs can incur charges. Use instructor-provided resources where possible and follow your organization's cleanup policy after class.</section>
+  <h2 id="build">Build the lab in modules</h2><section class="file-build"><h3>Use case 1 — Create the ACL index</h3><p>Enable permission filters and upload user/group ACL metadata.</p><div class="file-target"><strong>Create:</strong> <code>21_identity_aware_rag/student_00_create_secure_resources.py</code> <a href="../21_identity_aware_rag/00_create_secure_resources.py" target="_blank">View supplied reference file</a></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">1</div><div class="step-body"><h4>Import the required libraries</h4><p>Add only the SDK types used by this part of the lab.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import base64
+import csv
+import json
+import os
+from pathlib import Path
+
+from azure.identity import AzureCliCredential
+from azure.core.exceptions import HttpResponseError
+from azure.search.documents import SearchClient
+from azure.search.documents.indexes import SearchIndexClient
+from azure.search.documents.indexes.models import (
+    AzureOpenAIVectorizerParameters,
+    KnowledgeBase,
+    KnowledgeBaseAzureOpenAIModel,
+    KnowledgeSourceReference,
+    SearchField,
+    SearchIndex,
+    SearchIndexFieldReference,
+    SearchIndexKnowledgeSource,
+    SearchIndexKnowledgeSourceParameters,
+    SemanticConfiguration,
+    SemanticField,
+    SemanticPrioritizedFields,
+    SemanticSearch,
+)
+from dotenv import load_dotenv</code></pre></div></div></article><article class="step-card"><div class="step-number">2</div><div class="step-body"><h4>Load configuration</h4><p>Read endpoints, model names, and non-secret settings from the project environment.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>load_dotenv()
+
+SEARCH_SCOPE = &quot;https://search.azure.com/.default&quot;
+SEARCH_ENDPOINT = os.environ[&quot;AZURE_SEARCH_ENDPOINT&quot;]
+INDEX_NAME = os.environ[&quot;AZURE_SEARCH_SECURE_INDEX_NAME&quot;]
+KNOWLEDGE_SOURCE_NAME = os.environ[&quot;AZURE_SEARCH_SECURE_KNOWLEDGE_SOURCE_NAME&quot;]
+KNOWLEDGE_BASE_NAME = os.environ[&quot;AZURE_SEARCH_SECURE_KNOWLEDGE_BASE_NAME&quot;]
+AZURE_OPENAI_RESOURCE_URL = os.environ[&quot;AZURE_OPENAI_ENDPOINT&quot;].removesuffix(&quot;/openai/v1&quot;).rstrip(&quot;/&quot;)
+GPT_DEPLOYMENT = os.environ[&quot;AZURE_OPENAI_DEPLOYMENT&quot;]
+DEMO_FINANCE_GROUP = os.environ.get(
+    &quot;DEMO_FINANCE_GROUP_OBJECT_ID&quot;,
+    &quot;00000000-0000-0000-0000-000000000999&quot;,
+)
+
+
+def object_id_from_token(token: str) -&gt; str:
+    &quot;&quot;&quot;Read the signed-in user's oid claim locally without logging the token.&quot;&quot;&quot;
+    payload = token.split(&quot;.&quot;)[1]
+    payload += &quot;=&quot; * (-len(payload) % 4)
+    claims = json.loads(base64.urlsafe_b64decode(payload))
+    return claims[&quot;oid&quot;]</code></pre></div></div></article><article class="step-card"><div class="step-number">3</div><div class="step-body"><h4>Add implementation module 3</h4><p>Paste this block after the previous module and review how it advances the scenario.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>def acl_values(value: str, current_user_id: str) -&gt; list[str]:
+    replacements = {
+        &quot;CURRENT_USER&quot;: current_user_id,
+        &quot;FINANCE_GROUP&quot;: DEMO_FINANCE_GROUP,
+    }
+    return [replacements.get(item, item) for item in value.split(&quot;|&quot;)]
+
+
+def main() -&gt; None:
+    credential = AzureCliCredential()
+    current_user_id = object_id_from_token(credential.get_token(SEARCH_SCOPE).token)
+    index_client = SearchIndexClient(endpoint=SEARCH_ENDPOINT, credential=credential)</code></pre></div></div></article><article class="step-card"><div class="step-number">4</div><div class="step-body"><h4>Create and populate Search resources</h4><p>Define the schema or knowledge resource and load the classroom data.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    # Official permission-filter schema: ACL fields are filterable but not retrievable.
+    index = SearchIndex(
+        name=INDEX_NAME,
+        fields=[
+            SearchField(name=&quot;id&quot;, type=&quot;Edm.String&quot;, key=True, filterable=True),
+            SearchField(name=&quot;title&quot;, type=&quot;Edm.String&quot;, searchable=True, filterable=True),
+            SearchField(name=&quot;category&quot;, type=&quot;Edm.String&quot;, searchable=True, filterable=True),
+            SearchField(name=&quot;content&quot;, type=&quot;Edm.String&quot;, searchable=True),
+            SearchField(
+                name=&quot;UserIds&quot;,
+                type=&quot;Collection(Edm.String)&quot;,
+                filterable=True,
+                retrievable=False,
+                permission_filter=&quot;userIds&quot;,
+            ),
+            SearchField(
+                name=&quot;GroupIds&quot;,
+                type=&quot;Collection(Edm.String)&quot;,
+                filterable=True,
+                retrievable=False,
+                permission_filter=&quot;groupIds&quot;,
+            ),
+        ],
+        permission_filter_option=&quot;enabled&quot;,
+        semantic_search=SemanticSearch(
+            default_configuration_name=&quot;secure-travel-semantic-config&quot;,</code></pre></div></div></article><article class="step-card"><div class="step-number">5</div><div class="step-body"><h4>Add implementation module 5</h4><p>Paste this block after the previous module and review how it advances the scenario.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>            configurations=[
+                SemanticConfiguration(
+                    name=&quot;secure-travel-semantic-config&quot;,
+                    prioritized_fields=SemanticPrioritizedFields(
+                        title_field=SemanticField(field_name=&quot;title&quot;),
+                        content_fields=[SemanticField(field_name=&quot;content&quot;)],
+                        keywords_fields=[SemanticField(field_name=&quot;category&quot;)],
+                    ),
+                )
+            ],
+        ),
+    )
+    index_client.create_or_update_index(index)
+    print(f&quot;Permission-enabled index '{INDEX_NAME}' created or updated.&quot;)
+
+    csv_path = Path(__file__).parent / &quot;data&quot; / &quot;secure_travel_documents.csv&quot;
+    with csv_path.open(encoding=&quot;utf-8&quot;, newline=&quot;&quot;) as csv_file:
+        documents = []
+        for row in csv.DictReader(csv_file):
+            row[&quot;UserIds&quot;] = acl_values(row.pop(&quot;user_ids&quot;), current_user_id)
+            row[&quot;GroupIds&quot;] = acl_values(row.pop(&quot;group_ids&quot;), current_user_id)
+            documents.append(row)</code></pre></div></div></article><article class="step-card"><div class="step-number">6</div><div class="step-body"><h4>Create and populate Search resources</h4><p>Define the schema or knowledge resource and load the classroom data.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    search_client = SearchClient(endpoint=SEARCH_ENDPOINT, index_name=INDEX_NAME, credential=credential)
+    try:
+        results = search_client.upload_documents(documents=documents)
+    except HttpResponseError as error:
+        if error.status_code == 403:
+            raise SystemExit(
+                &quot;Azure AI Search denied document upload. Assign the signed-in user &quot;
+                &quot;the Search Index Data Contributor role, wait for RBAC propagation, and rerun.&quot;
+            ) from None
+        raise
+    if not all(result.succeeded for result in results):
+        raise RuntimeError(&quot;One or more secured documents failed to upload.&quot;)
+    print(f&quot;Uploaded {len(documents)} documents with document-level ACL metadata.&quot;)</code></pre></div></div></article><article class="step-card"><div class="step-number">7</div><div class="step-body"><h4>Add implementation module 7</h4><p>Paste this block after the previous module and review how it advances the scenario.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    knowledge_source = SearchIndexKnowledgeSource(
+        name=KNOWLEDGE_SOURCE_NAME,
+        description=&quot;Permission-aware fictional travel documents&quot;,
+        search_index_parameters=SearchIndexKnowledgeSourceParameters(
+            search_index_name=INDEX_NAME,
+            source_data_fields=[
+                SearchIndexFieldReference(name=&quot;id&quot;),
+                SearchIndexFieldReference(name=&quot;title&quot;),
+                SearchIndexFieldReference(name=&quot;category&quot;),
+            ],
+        ),
+    )
+    index_client.create_or_update_knowledge_source(knowledge_source=knowledge_source)</code></pre></div></div></article><article class="step-card"><div class="step-number">8</div><div class="step-body"><h4>Create and populate Search resources</h4><p>Define the schema or knowledge resource and load the classroom data.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    model_parameters = AzureOpenAIVectorizerParameters(
+        resource_url=AZURE_OPENAI_RESOURCE_URL,
+        deployment_name=GPT_DEPLOYMENT,
+        model_name=GPT_DEPLOYMENT,
+    )
+    knowledge_base = KnowledgeBase(
+        name=KNOWLEDGE_BASE_NAME,
+        models=[KnowledgeBaseAzureOpenAIModel(azure_open_ai_parameters=model_parameters)],
+        knowledge_sources=[KnowledgeSourceReference(name=KNOWLEDGE_SOURCE_NAME)],
+        output_mode=&quot;answerSynthesis&quot;,
+        answer_instructions=(
+            &quot;Answer only from documents authorized for the querying user. &quot;
+            &quot;If no authorized document contains the answer, say exactly: &quot;
+            &quot;No authorized document contains this answer.&quot;
+        ),
+    )
+    index_client.create_or_update_knowledge_base(knowledge_base)
+    print(f&quot;Permission-aware knowledge base '{KNOWLEDGE_BASE_NAME}' created or updated.&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    main()</code></pre></div></div></article></section><section class="file-build"><h3>Use case 2 — Direct authorized retrieval</h3><p>Send the signed-in user's Search token separately from the service credential.</p><div class="file-target"><strong>Create:</strong> <code>21_identity_aware_rag/student_01_sdk_authorized.py</code> <a href="../21_identity_aware_rag/01_sdk_authorized_retrieval.py" target="_blank">View supplied reference file</a></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">9</div><div class="step-body"><h4>Import the required libraries</h4><p>Add only the SDK types used by this part of the lab.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import os
+
+from azure.identity import AzureCliCredential, get_bearer_token_provider
+from azure.search.documents.knowledgebases import KnowledgeBaseRetrievalClient
+from azure.search.documents.knowledgebases.models import (
+    KnowledgeBaseMessage,
+    KnowledgeBaseMessageTextContent,
+    KnowledgeBaseRetrievalRequest,
+)
+from dotenv import load_dotenv
+
+load_dotenv()</code></pre></div></div></article><article class="step-card"><div class="step-number">10</div><div class="step-body"><h4>Connect retrieval</h4><p>Configure the Search index or knowledge base used to ground the answer.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>def retrieve_as_signed_in_user(client: KnowledgeBaseRetrievalClient, user_token: str, question: str):
+    request = KnowledgeBaseRetrievalRequest(
+        messages=[
+            KnowledgeBaseMessage(
+                role=&quot;user&quot;,
+                content=[KnowledgeBaseMessageTextContent(text=question)],
+            )
+        ]
+    )
+    # This is the documented query-time permission-enforcement parameter.
+    return client.retrieve(
+        retrieval_request=request,
+            query_source_authorization=user_token,
+    )
+
+
+def response_text(result) -&gt; str:
+    return &quot;\n\n&quot;.join(
+        content.text for message in result.response for content in message.content
+    )</code></pre></div></div></article><article class="step-card"><div class="step-number">11</div><div class="step-body"><h4>Load configuration</h4><p>Read endpoints, model names, and non-secret settings from the project environment.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>def main() -&gt; None:
+    # Classroom: Azure CLI supplies both identities. In production, the service
+    # credential and delegated end-user token are separate security principals.
+    service_credential = AzureCliCredential()
+    user_token_provider = get_bearer_token_provider(
+        service_credential,
+        &quot;https://search.azure.com/.default&quot;,
+    )
+    user_token = user_token_provider()
+
+    client = KnowledgeBaseRetrievalClient(
+        endpoint=os.environ[&quot;AZURE_SEARCH_ENDPOINT&quot;],
+        knowledge_base_name=os.environ[&quot;AZURE_SEARCH_SECURE_KNOWLEDGE_BASE_NAME&quot;],
+        credential=service_credential,
+    )
+
+    allowed = retrieve_as_signed_in_user(
+        client,
+        user_token,
+        &quot;What is my classroom traveler assistance code?&quot;,
+    )
+    print(&quot;AUTHORIZED USER-SPECIFIC QUERY\n&quot;, response_text(allowed))</code></pre></div></div></article><article class="step-card"><div class="step-number">12</div><div class="step-body"><h4>Add the program entry point</h4><p>Run the completed implementation when the file is executed directly.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    denied = retrieve_as_signed_in_user(
+        client,
+        user_token,
+        &quot;What is the finance-only refund authorization code?&quot;,
+    )
+    print(&quot;\nUNAUTHORIZED FINANCE QUERY\n&quot;, response_text(denied))
+
+
+if __name__ == &quot;__main__&quot;:
+    main()</code></pre></div></div></article></section><section class="file-build"><h3>Use case 3 — Agent Framework identity RAG</h3><p>Let the context provider forward the query-source credential on each retrieval.</p><div class="file-target"><strong>Create:</strong> <code>21_identity_aware_rag/student_02_identity_agent.py</code> <a href="../21_identity_aware_rag/02_agent_framework_identity_rag.py" target="_blank">View supplied reference file</a></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">13</div><div class="step-body"><h4>Import the required libraries</h4><p>Add only the SDK types used by this part of the lab.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import asyncio
+import os
+
+from agent_framework import Agent
+from agent_framework.azure import AzureAISearchContextProvider
+from agent_framework.foundry import FoundryChatClient
+from azure.identity.aio import AzureCliCredential
+from dotenv import load_dotenv
+
+load_dotenv()</code></pre></div></div></article><article class="step-card"><div class="step-number">14</div><div class="step-body"><h4>Load configuration</h4><p>Read endpoints, model names, and non-secret settings from the project environment.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>async def main() -&gt; None:
+    async with AzureCliCredential() as credential:
+        search_provider = AzureAISearchContextProvider(
+            source_id=&quot;identity_aware_search&quot;,
+            endpoint=os.environ[&quot;AZURE_SEARCH_ENDPOINT&quot;],
+            knowledge_base_name=os.environ[&quot;AZURE_SEARCH_SECURE_KNOWLEDGE_BASE_NAME&quot;],
+            credential=credential,
+            mode=&quot;agentic&quot;,
+            knowledge_base_output_mode=&quot;answer_synthesis&quot;,
+            retrieval_reasoning_effort=&quot;low&quot;,
+            # Agent Framework forwards this user's Search-scoped token as
+            # x-ms-query-source-authorization on every knowledge-base query.
+            query_source_credential=credential,
+        )</code></pre></div></div></article><article class="step-card"><div class="step-number">15</div><div class="step-body"><h4>Load configuration</h4><p>Read endpoints, model names, and non-secret settings from the project environment.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>        async with (
+            search_provider,
+            Agent(
+                client=FoundryChatClient(
+                    project_endpoint=os.environ[&quot;FOUNDRY_PROJECT_ENDPOINT&quot;],
+                    model=os.environ[&quot;FOUNDRY_MODEL&quot;],
+                    credential=credential,
+                ),
+                name=&quot;IdentityAwareTravelAgent&quot;,
+                instructions=(
+                    &quot;Answer only from authorized retrieved context. &quot;
+                    &quot;If the answer is absent, say: No authorized document contains this answer.&quot;
+                ),
+                context_providers=[search_provider],
+            ) as agent,
+        ):
+            print(&quot;AUTHORIZED QUESTION&quot;)
+            allowed = await agent.run(&quot;What is my classroom traveler assistance code?&quot;)
+            print(allowed.text)
+
+            print(&quot;\nUNAUTHORIZED QUESTION&quot;)
+            denied = await agent.run(&quot;What is the finance-only refund authorization code?&quot;)
+            print(denied.text)</code></pre></div></div></article><article class="step-card"><div class="step-number">16</div><div class="step-body"><h4>Run and inspect the scenario</h4><p>Execute the lab task and expose the result needed for validation.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>if __name__ == &quot;__main__&quot;:
+    asyncio.run(main())</code></pre></div></div></article></section><h3>Supplied supporting files</h3><p>These files are already part of the repository. Inspect or reuse them rather than retyping them.</p><ul><li><a href="../21_identity_aware_rag/data/secure_travel_documents.csv" target="_blank"><code>21_identity_aware_rag/data/secure_travel_documents.csv</code></a></li></ul>
+  <h2 id="run">Run and validate</h2><h3>Run the completed files</h3><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python .\21_identity_aware_rag\student_00_create_secure_resources.py
+python .\21_identity_aware_rag\student_01_sdk_authorized.py
+python .\21_identity_aware_rag\student_02_identity_agent.py</code></pre></div><h3>Expected result</h3><ul><li>The signed-in user receives the user-specific classroom assistance code.</li><li>The finance-only question returns no authorized answer for a nonmember.</li><li>ACL fields never appear in retrieved grounding text.</li></ul><section class="checkpoint"><strong>Completion checkpoint:</strong> Do not mark the lab complete until the observed output matches these conditions.</section><h3>Five-minute challenge</h3><p>Run the same two questions as a finance-group member and nonmember; record which security gate changes the result.</p>
+  <h2 id="knowledge-check">Knowledge check</h2><div class="knowledge-list"><section class="question" data-answer="3"><div class="question-number">1</div><div class="question-body"><h3>Which statement best describes the central concept in Lab 17?</h3><label class="option"><input type="radio" name="21-q0" value="0"><span>It removes the need for model authentication and authorization.</span></label><label class="option"><input type="radio" name="21-q0" value="1"><span>It stores provider credentials directly in Python source.</span></label><label class="option"><input type="radio" name="21-q0" value="2"><span>It automatically deploys every Azure resource without configuration.</span></label><label class="option"><input type="radio" name="21-q0" value="3"><span>Identity-aware RAG enforces document authorization in Search before text reaches the model.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="3"><div class="question-number">2</div><div class="question-body"><h3>Which setup choice matches this lab?</h3><label class="option"><input type="radio" name="21-q1" value="0"><span>Hard-code every credential so the code is self-contained.</span></label><label class="option"><input type="radio" name="21-q1" value="1"><span>Skip role assignments because successful sign-in grants every permission.</span></label><label class="option"><input type="radio" name="21-q1" value="2"><span>Use real customer data before validating the classroom scenario.</span></label><label class="option"><input type="radio" name="21-q1" value="3"><span>Separate the service credential from the Search-scoped end-user query-source token.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="3"><div class="question-number">3</div><div class="question-body"><h3>What evidence proves that the lab worked?</h3><label class="option"><input type="radio" name="21-q2" value="0"><span>The Python file exists, even if it was not run.</span></label><label class="option"><input type="radio" name="21-q2" value="1"><span>The script compiled, but its output was not inspected.</span></label><label class="option"><input type="radio" name="21-q2" value="2"><span>The model returned any fluent answer, regardless of the expected behavior.</span></label><label class="option"><input type="radio" name="21-q2" value="3"><span>Allowed content is returned while finance-only content remains unavailable to a nonmember.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section></div>
+  <h2>Summary of learning</h2><ul><li>Create permission-filter fields and upload ACL metadata</li><li>Pass a Search-scoped end-user token at query time</li><li>Prove allowed and denied retrieval paths</li></ul>
+  <h2 id="sources">Microsoft documentation and sample references</h2><ul><li><a href="https://learn.microsoft.com/en-us/azure/search/search-query-access-control-rbac-enforcement" target="_blank" rel="noreferrer">Query-time ACL and RBAC enforcement</a></li><li><a href="https://learn.microsoft.com/en-us/azure/search/search-index-access-control-lists-and-rbac-push-api" target="_blank" rel="noreferrer">Index ACLs with the push API</a></li><li><a href="https://learn.microsoft.com/en-us/azure/search/agentic-retrieval-how-to-retrieve#enforce-permissions-at-query-time-preview" target="_blank" rel="noreferrer">Knowledge-base permission enforcement</a></li><li><a href="https://learn.microsoft.com/en-us/agent-framework/integrations/by-component/context-providers/azure-ai-search" target="_blank" rel="noreferrer">Agent Framework Azure AI Search provider</a></li><li><a href="https://learn.microsoft.com/en-us/agent-framework/" target="_blank" rel="noreferrer">Microsoft Agent Framework documentation</a></li></ul><section class="notice"><strong>Version boundary:</strong> The lab code uses the versions pinned in the root <code>requirements.txt</code>. Preview documentation can move ahead of those packages, so upgrade only after rerunning the validation suite.</section>
+  <div class="completion"><label><input type="checkbox" data-lab-complete="21"> Mark Lab 17 complete</label></div>
+  <nav class="lab-pager"><a href="20-agentic-retrieval.html">← Lab 16: Compare Classic and Agentic Retrieval</a><a href="14-workflow-basics.html">Lab 18: Build a Functional Workflow →</a></nav>
+</main><script src="assets/lab.js"></script></body></html>

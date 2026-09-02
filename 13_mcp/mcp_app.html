@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Contoso change risk</title>
+  <style>
+    body { margin: 0; padding: 18px; font: 15px/1.5 system-ui, sans-serif; color: #172554; }
+    article { border: 1px solid #c7d2fe; border-radius: 14px; padding: 18px; background: #eef2ff; }
+    h2 { margin: 0 0 8px; }
+    .level { display: inline-block; padding: 4px 10px; border-radius: 999px; color: white; background: #4f46e5; }
+  </style>
+</head>
+<body>
+  <article>
+    <h2 id="title">Waiting for a tool result…</h2>
+    <p><strong id="change-id"></strong></p>
+    <p>Risk: <span class="level" id="level">unknown</span> · Score: <strong id="score">–</strong></p>
+  </article>
+  <script type="module">
+    import { App } from "https://esm.sh/@modelcontextprotocol/ext-apps@1.7.5?deps=zod@3.25.1";
+
+    const app = new App({ name: "Contoso Change Risk Card", version: "1.0.0" });
+    app.ontoolresult = (result) => {
+      const text = result.content?.find((item) => item.type === "text")?.text;
+      if (!text) return;
+      const data = JSON.parse(text);
+      document.querySelector("#title").textContent = data.title;
+      document.querySelector("#change-id").textContent = data.change_id;
+      document.querySelector("#level").textContent = data.level;
+      document.querySelector("#score").textContent = data.score;
+    };
+    app.connect();
+  </script>
+</body>
+</html>

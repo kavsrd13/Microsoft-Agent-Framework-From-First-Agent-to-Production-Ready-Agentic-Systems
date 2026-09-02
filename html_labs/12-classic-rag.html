@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab 15 — Build Classic RAG with Azure AI Search</title><link rel="stylesheet" href="assets/lab.css"></head>
+<body data-lab-id="12">
+<main class="exercise">
+  <header class="lab-header"><a class="back-link" href="index.html">← Course lab index</a><h1>Lab 15: Build Classic RAG with Azure AI Search</h1><p class="lab-header-desc">Classic RAG retrieves relevant documents before a model answers, reducing unsupported responses and connecting answers to enterprise knowledge.</p><div class="lab-header-meta"><span class="lab-meta-pill">Level 300</span><span class="lab-meta-pill">75 min</span><span class="lab-meta-pill">Phase 4 · RAG progression</span><span class="lab-meta-pill">Foundry + Azure AI Search</span></div></header>
+  <nav class="page-nav" aria-label="Lab sections"><a href="#details">Details</a><a href="#readiness">Setup</a><a href="#resources">Resources</a><a href="#build">Build</a><a href="#run">Validate</a><a href="#knowledge-check">Knowledge check</a></nav>
+  <h2 id="details">Lab details</h2>
+  <table><thead><tr><th>Level</th><th>Persona</th><th>Duration</th><th>Primary resource</th></tr></thead><tbody><tr><td>300</td><td>Python developer / solution architect</td><td>75 min</td><td>Foundry + Azure AI Search</td></tr></tbody></table>
+  <h2>Why this matters</h2><p>Classic RAG retrieves relevant documents before a model answers, reducing unsupported responses and connecting answers to enterprise knowledge.</p>
+  <h2>Learning objectives</h2><ul><li>Create and populate a semantic Search index</li><li>Attach AzureAISearchContextProvider</li><li>Verify grounded and unanswerable questions</li></ul>
+  <h2>Core concepts</h2><table><thead><tr><th>Concept</th><th>What it means in this lab</th></tr></thead><tbody><tr><td><strong>Retrieval</strong></td><td>Finds relevant indexed documents for a query.</td></tr><tr><td><strong>Context provider</strong></td><td>Injects retrieved passages before the model call.</td></tr><tr><td><strong>Grounding rule</strong></td><td>Requires the answer to stay within retrieved evidence.</td></tr></tbody></table>
+
+    <h2 id="readiness">Start here: end-to-end readiness</h2>
+    <section class="notice"><strong>Use the project root.</strong> Run every command from <code>microsoft-agent-framework-demos</code> unless the lab explicitly changes folders. Commands use PowerShell on Windows.</section>
+    <h3>Step 1 — Verify prerequisites</h3>
+    <ul class="checklist">
+      <li><label><input type="checkbox" data-progress="12-python"> Python 3.12 is installed.</label></li>
+      <li><label><input type="checkbox" data-progress="12-cli"> Azure CLI is installed.</label></li>
+      <li><label><input type="checkbox" data-progress="12-editor"> VS Code or another Python editor is available.</label></li>
+      <li><label><input type="checkbox" data-progress="12-access"> Required Azure access described below is available.</label></li>
+    </ul>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python --version
+az --version</code></pre></div>
+    <h3>Step 2 — Create and activate the virtual environment</h3>
+    <p>Create one course environment in the repository root. Reuse it for later labs.</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m venv venv
+.\venv\Scripts\Activate.ps1</code></pre></div>
+    <p>If PowerShell blocks activation, allow scripts only for the current process and activate again:</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\venv\Scripts\Activate.ps1</code></pre></div>
+    <h3>Step 3 — Install the libraries</h3>
+    <p>The repository requirements are pinned so every lab uses the same tested SDK surface.</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip check</code></pre></div>
+    <details><summary>Running only this lab outside the course repository</summary><p>Install these direct packages:</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install agent-framework-core==1.15.0 agent-framework-foundry==1.11.0 azure-identity==1.25.3 python-dotenv==1.2.3 agent-framework-azure-ai-search==1.0.0b260813 azure-search-documents==12.1.0b1</code></pre></div></details>
+    <h3>Step 4 — Create the environment file</h3>
+    <p>Create <code>.env</code> once from the safe template, then replace placeholders. Never commit <code>.env</code>.</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>Copy-Item .env.example .env
+notepad .env</code></pre></div>
+    <div class="code-shell"><div class="code-head"><span>Environment</span><button class="copy-button" type="button">Copy</button></div><pre><code>FOUNDRY_PROJECT_ENDPOINT=https://&lt;foundry-resource&gt;.services.ai.azure.com/api/projects/&lt;project&gt;
+FOUNDRY_MODEL=&lt;deployed-model-name&gt;
+AZURE_SEARCH_ENDPOINT=https://&lt;search-service&gt;.search.windows.net
+AZURE_SEARCH_INDEX_NAME=travel-classic-demo
+AZURE_SEARCH_API_KEY=</code></pre></div>
+    <h3>Step 5 — Authenticate for classroom development</h3><p>Sign in with the identity that has access to the Foundry project and any additional Azure resources.</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>az login
+az account show --query &quot;{subscription:name, tenant:tenantId}&quot; -o table</code></pre></div>
+
+  <h2 id="resources">Create or verify required resources</h2><ol><li>In Microsoft Foundry, create or select a project, deploy the instructor-approved chat model, and copy its project endpoint and deployment name into <code>.env</code>.</li><li>Grant the learner the project-level role required to invoke the deployment. For a shared class, provision this before the lab.</li><li>Create an Azure AI Search service (Basic is recommended for the later agentic labs).</li><li>Enable RBAC and assign the learner Search Service Contributor, Search Index Data Contributor, and Search Index Data Reader.</li><li>The setup script creates the index and uploads three fictional travel documents.</li></ol><h4>Create a Search service (replace placeholders)</h4><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>$resourceGroup = &quot;maf-course-rg&quot;
+$location = &quot;eastus&quot;
+$searchService = &quot;&lt;globally-unique-search-name&gt;&quot;
+az group create --name $resourceGroup --location $location
+az search service create --name $searchService --resource-group $resourceGroup --sku basic --partition-count 1 --replica-count 1 --identity-type SystemAssigned</code></pre></div><h4>Assign the three learner roles</h4><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>$searchId = az search service show --name $searchService --resource-group $resourceGroup --query id -o tsv
+$userId = az ad signed-in-user show --query id -o tsv
+az role assignment create --assignee-object-id $userId --assignee-principal-type User --role &quot;Search Service Contributor&quot; --scope $searchId
+az role assignment create --assignee-object-id $userId --assignee-principal-type User --role &quot;Search Index Data Contributor&quot; --scope $searchId
+az role assignment create --assignee-object-id $userId --assignee-principal-type User --role &quot;Search Index Data Reader&quot; --scope $searchId</code></pre></div><section class="warning"><strong>Cost and cleanup:</strong> Azure Search, models, hosted agents, storage, browser workspaces, and optimization jobs can incur charges. Use instructor-provided resources where possible and follow your organization's cleanup policy after class.</section>
+  <h2 id="build">Build the lab in modules</h2><section class="file-build"><h3>Use case 1 — Create the Search index</h3><p>Define a semantic schema and upload the fictional grounding documents.</p><div class="file-target"><strong>Create:</strong> <code>12_rag_azure_ai_search/student_setup_search.py</code> <a href="../12_rag_azure_ai_search/setup_search.py" target="_blank">View supplied reference file</a></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">1</div><div class="step-body"><h4>Import the required libraries</h4><p>Add only the SDK types used by this part of the lab.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import os
+
+from azure.identity import AzureCliCredential
+from azure.search.documents import SearchClient
+from azure.search.documents.indexes import SearchIndexClient
+from azure.search.documents.indexes.models import (
+    SearchField,
+    SearchIndex,
+    SemanticConfiguration,
+    SemanticField,
+    SemanticPrioritizedFields,
+    SemanticSearch,
+)
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+def main() -&gt; None:
+    endpoint = os.environ[&quot;AZURE_SEARCH_ENDPOINT&quot;]
+    index_name = os.environ[&quot;AZURE_SEARCH_INDEX_NAME&quot;]
+    credential = AzureCliCredential()</code></pre></div></div></article><article class="step-card"><div class="step-number">2</div><div class="step-body"><h4>Create and populate Search resources</h4><p>Define the schema or knowledge resource and load the classroom data.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    index = SearchIndex(
+        name=index_name,
+        fields=[
+            SearchField(name=&quot;id&quot;, type=&quot;Edm.String&quot;, key=True, filterable=True),
+            SearchField(name=&quot;title&quot;, type=&quot;Edm.String&quot;, searchable=True),
+            SearchField(name=&quot;content&quot;, type=&quot;Edm.String&quot;, searchable=True),
+        ],
+        semantic_search=SemanticSearch(
+            default_configuration_name=&quot;travel-semantic-config&quot;,
+            configurations=[
+                SemanticConfiguration(
+                    name=&quot;travel-semantic-config&quot;,
+                    prioritized_fields=SemanticPrioritizedFields(
+                        title_field=SemanticField(field_name=&quot;title&quot;),
+                        content_fields=[SemanticField(field_name=&quot;content&quot;)],
+                    ),
+                )
+            ],
+        ),
+    )
+
+    index_client = SearchIndexClient(endpoint=endpoint, credential=credential)
+    index_client.create_or_update_index(index)</code></pre></div></div></article><article class="step-card"><div class="step-number">3</div><div class="step-body"><h4>Create and populate Search resources</h4><p>Define the schema or knowledge resource and load the classroom data.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    documents = [
+        {
+            &quot;id&quot;: &quot;1&quot;,
+            &quot;title&quot;: &quot;Doha terminal transfer&quot;,
+            &quot;content&quot;: &quot;Allow at least 75 minutes for a terminal transfer in Doha.&quot;,
+        },
+        {
+            &quot;id&quot;: &quot;2&quot;,
+            &quot;title&quot;: &quot;Delayed baggage in Paris&quot;,
+            &quot;content&quot;: &quot;Report delayed baggage at the airline baggage desk before leaving arrivals.&quot;,
+        },
+        {
+            &quot;id&quot;: &quot;3&quot;,
+            &quot;title&quot;: &quot;Weather cancellation&quot;,
+            &quot;content&quot;: &quot;For an overnight weather cancellation, arrange one hotel night and ground transport.&quot;,
+        },
+    ]
+
+    search_client = SearchClient(endpoint=endpoint, index_name=index_name, credential=credential)
+    results = search_client.upload_documents(documents=documents)
+    if not all(result.succeeded for result in results):
+        raise RuntimeError(&quot;One or more classroom documents failed to upload.&quot;)
+
+    print(f&quot;Created '{index_name}' and uploaded {len(documents)} documents.&quot;)</code></pre></div></div></article><article class="step-card"><div class="step-number">4</div><div class="step-body"><h4>Add the program entry point</h4><p>Run the completed implementation when the file is executed directly.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>if __name__ == &quot;__main__&quot;:
+    main()</code></pre></div></div></article></section><section class="file-build"><h3>Use case 2 — Ground an Agent</h3><p>Retrieve semantic matches through an Agent Framework context provider.</p><div class="file-target"><strong>Create:</strong> <code>12_rag_azure_ai_search/student_lab.py</code> <a href="../12_rag_azure_ai_search/demo.py" target="_blank">View supplied reference file</a></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">5</div><div class="step-body"><h4>Import the required libraries</h4><p>Add only the SDK types used by this part of the lab.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import asyncio
+import os
+
+from agent_framework import Agent
+from agent_framework.azure import AzureAISearchContextProvider
+from agent_framework.foundry import FoundryChatClient
+from azure.identity.aio import AzureCliCredential
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+async def main() -&gt; None:
+    search_key = os.environ.get(&quot;AZURE_SEARCH_API_KEY&quot;) or None
+
+    async with AzureCliCredential() as credential:
+        search_provider = AzureAISearchContextProvider(
+            source_id=&quot;search_provider&quot;,
+            endpoint=os.environ[&quot;AZURE_SEARCH_ENDPOINT&quot;],
+            index_name=os.environ[&quot;AZURE_SEARCH_INDEX_NAME&quot;],
+            api_key=search_key,
+            credential=None if search_key else credential,
+            mode=&quot;semantic&quot;,
+            top_k=3,
+        )</code></pre></div></div></article><article class="step-card"><div class="step-number">6</div><div class="step-body"><h4>Load configuration</h4><p>Read endpoints, model names, and non-secret settings from the project environment.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>        async with (
+            search_provider,
+            Agent(
+                client=FoundryChatClient(
+                    project_endpoint=os.environ[&quot;FOUNDRY_PROJECT_ENDPOINT&quot;],
+                    model=os.environ[&quot;FOUNDRY_MODEL&quot;],
+                    credential=credential,
+                ),
+                name=&quot;SearchAgent&quot;,
+                instructions=(
+                    &quot;Answer from the retrieved knowledge-base context. &quot;
+                    &quot;If the context does not contain the answer, say so.&quot;
+                ),
+                context_providers=[search_provider],
+            ) as agent,
+        ):
+            result = await agent.run(&quot;Summarize the main topics in the knowledge base.&quot;)
+            print(result.text)
+
+
+if __name__ == &quot;__main__&quot;:
+    asyncio.run(main())</code></pre></div></div></article></section>
+  <h2 id="run">Run and validate</h2><h3>Run the completed files</h3><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python .\12_rag_azure_ai_search\student_setup_search.py
+python .\12_rag_azure_ai_search\student_lab.py</code></pre></div><h3>Expected result</h3><ul><li>The setup script confirms three uploaded documents.</li><li>The agent summarizes only information retrieved from the configured index.</li></ul><section class="checkpoint"><strong>Completion checkpoint:</strong> Do not mark the lab complete until the observed output matches these conditions.</section><h3>Five-minute challenge</h3><p>Ask one question answered by the three documents and one unrelated question; confirm that the agent admits insufficient context.</p>
+  <h2 id="knowledge-check">Knowledge check</h2><div class="knowledge-list"><section class="question" data-answer="0"><div class="question-number">1</div><div class="question-body"><h3>Which statement best describes the central concept in Lab 15?</h3><label class="option"><input type="radio" name="12-q0" value="0"><span>Classic RAG retrieves top matching documents and injects them before the model answers.</span></label><label class="option"><input type="radio" name="12-q0" value="1"><span>It removes the need for model authentication and authorization.</span></label><label class="option"><input type="radio" name="12-q0" value="2"><span>It stores provider credentials directly in Python source.</span></label><label class="option"><input type="radio" name="12-q0" value="3"><span>It automatically deploys every Azure resource without configuration.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="0"><div class="question-number">2</div><div class="question-body"><h3>Which setup choice matches this lab?</h3><label class="option"><input type="radio" name="12-q1" value="0"><span>Populate the semantic index and grant the signed-in learner Search data-plane roles.</span></label><label class="option"><input type="radio" name="12-q1" value="1"><span>Hard-code every credential so the code is self-contained.</span></label><label class="option"><input type="radio" name="12-q1" value="2"><span>Skip role assignments because successful sign-in grants every permission.</span></label><label class="option"><input type="radio" name="12-q1" value="3"><span>Use real customer data before validating the classroom scenario.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="0"><div class="question-number">3</div><div class="question-body"><h3>What evidence proves that the lab worked?</h3><label class="option"><input type="radio" name="12-q2" value="0"><span>The agent answers from retrieved travel documents and refuses unsupported questions.</span></label><label class="option"><input type="radio" name="12-q2" value="1"><span>The Python file exists, even if it was not run.</span></label><label class="option"><input type="radio" name="12-q2" value="2"><span>The script compiled, but its output was not inspected.</span></label><label class="option"><input type="radio" name="12-q2" value="3"><span>The model returned any fluent answer, regardless of the expected behavior.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section></div>
+  <h2>Summary of learning</h2><ul><li>Create and populate a semantic Search index</li><li>Attach AzureAISearchContextProvider</li><li>Verify grounded and unanswerable questions</li></ul>
+  <h2 id="sources">Microsoft documentation and sample references</h2><ul><li><a href="https://learn.microsoft.com/en-us/agent-framework/journey/adding-context-providers" target="_blank" rel="noreferrer">Adding context providers</a></li><li><a href="https://learn.microsoft.com/en-us/python/api/agent-framework-core/agent_framework.azure.azureaisearchcontextprovider?view=agent-framework-python-latest" target="_blank" rel="noreferrer">Azure AI Search context provider API</a></li><li><a href="https://github.com/microsoft/agent-framework/blob/main/python/samples/02-agents/context_providers/azure_ai_search/search_context_semantic.py" target="_blank" rel="noreferrer">official Search sample</a></li><li><a href="https://learn.microsoft.com/en-us/agent-framework/" target="_blank" rel="noreferrer">Microsoft Agent Framework documentation</a></li></ul><section class="notice"><strong>Version boundary:</strong> The lab code uses the versions pinned in the root <code>requirements.txt</code>. Preview documentation can move ahead of those packages, so upgrade only after rerunning the validation suite.</section>
+  <div class="completion"><label><input type="checkbox" data-lab-complete="12"> Mark Lab 15 complete</label></div>
+  <nav class="lab-pager"><a href="22-development-lifecycle.html">← Lab 14: Apply the Agent Development Lifecycle</a><a href="20-agentic-retrieval.html">Lab 16: Compare Classic and Agentic Retrieval →</a></nav>
+</main><script src="assets/lab.js"></script></body></html>

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab 06 — Build and Inspect an MCP Server</title><link rel="stylesheet" href="assets/lab.css"></head>
+<body data-lab-id="13">
+<main class="exercise">
+  <header class="lab-header"><a class="back-link" href="index.html">← Course lab index</a><h1>Lab 06: Build and Inspect an MCP Server</h1><p class="lab-header-desc">Before an agent can consume an MCP server, learners should see how the server publishes tools, resources, and prompts, how Inspector verifies the protocol, and how an API-key-protected Azure endpoint exposes the same capabilities.</p><div class="lab-header-meta"><span class="lab-meta-pill">Level 300</span><span class="lab-meta-pill">75 min</span><span class="lab-meta-pill">Phase 2 · Tools, state, and memory</span><span class="lab-meta-pill">MCP Inspector + shared Azure Container Apps</span></div></header>
+  <nav class="page-nav" aria-label="Lab sections"><a href="#details">Details</a><a href="#readiness">Setup</a><a href="#resources">Resources</a><a href="#build">Build</a><a href="#run">Validate</a><a href="#knowledge-check">Knowledge check</a></nav>
+  <h2 id="details">Lab details</h2>
+  <table><thead><tr><th>Level</th><th>Persona</th><th>Duration</th><th>Primary resource</th></tr></thead><tbody><tr><td>300</td><td>Python developer / solution architect</td><td>75 min</td><td>MCP Inspector + shared Azure Container Apps</td></tr></tbody></table>
+  <h2>Why this matters</h2><p>Before an agent can consume an MCP server, learners should see how the server publishes tools, resources, and prompts, how Inspector verifies the protocol, and how an API-key-protected Azure endpoint exposes the same capabilities.</p>
+  <h2>Learning objectives</h2><ul><li>Create a Python FastMCP server with tools, a resource, and a prompt</li><li>Test the local Streamable HTTP endpoint with MCP Inspector</li><li>Connect Inspector to the instructor-provided authenticated Azure endpoint</li></ul>
+  <h2>Core concepts</h2><table><thead><tr><th>Concept</th><th>What it means in this lab</th></tr></thead><tbody><tr><td><strong>FastMCP</strong></td><td>Registers Python functions as MCP tools, resources, and prompts.</td></tr><tr><td><strong>MCP Inspector</strong></td><td>Discovers and invokes protocol capabilities without an LLM.</td></tr><tr><td><strong>Streamable HTTP</strong></td><td>Exposes the MCP endpoint locally and through Azure HTTPS ingress.</td></tr><tr><td><strong>API-key header</strong></td><td>Authenticates remote requests with the instructor-provided X-API-Key value.</td></tr></tbody></table>
+
+    <h2 id="readiness">Start here: end-to-end readiness</h2>
+    <section class="notice"><strong>Use the project root.</strong> Run every command from <code>microsoft-agent-framework-demos</code> unless the lab explicitly changes folders. Commands use PowerShell on Windows.</section>
+    <h3>Step 1 — Verify prerequisites</h3>
+    <ul class="checklist">
+      <li><label><input type="checkbox" data-progress="13-python"> Python 3.12 is installed.</label></li>
+      <li><label><input type="checkbox" data-progress="13-cli"> Azure CLI is installed.</label></li>
+      <li><label><input type="checkbox" data-progress="13-editor"> VS Code or another Python editor is available.</label></li>
+      <li><label><input type="checkbox" data-progress="13-access"> Required Azure access described below is available.</label></li>
+    </ul>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python --version
+az --version</code></pre></div>
+    <h3>Step 2 — Create and activate the virtual environment</h3>
+    <p>Create one course environment in the repository root. Reuse it for later labs.</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m venv venv
+.\venv\Scripts\Activate.ps1</code></pre></div>
+    <p>If PowerShell blocks activation, allow scripts only for the current process and activate again:</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\venv\Scripts\Activate.ps1</code></pre></div>
+    <h3>Step 3 — Install the libraries</h3>
+    <p>The repository requirements are pinned so every lab uses the same tested SDK surface.</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip check</code></pre></div>
+    <details><summary>Running only this lab outside the course repository</summary><p>Install these direct packages:</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install mcp==1.29.0 uvicorn==0.52.4</code></pre></div></details>
+    <h3>Step 4 — Create the environment file</h3>
+    <p>Create <code>.env</code> once from the safe template, then replace placeholders. Never commit <code>.env</code>.</p>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>Copy-Item .env.example .env
+notepad .env</code></pre></div>
+    <div class="code-shell"><div class="code-head"><span>Environment</span><button class="copy-button" type="button">Copy</button></div><pre><code>MCP_SERVER_NAME=Contoso Change Risk Advisor
+MCP_SERVER_URL=https://&lt;instructor-provided-hostname&gt;/mcp
+MCP_API_KEY=&lt;instructor-provided-api-key&gt;</code></pre></div>
+
+
+  <h2 id="resources">Create or verify required resources</h2><ol><li>Obtain the shared MCP endpoint and API key from the instructor and keep both in the git-ignored .env file.</li><li>Do not create or delete Azure resources in this lab; the shared Contoso Change Risk Advisor is already running.</li><li>Use only the fictional, read-only change records supplied by the lab.</li><li>Install Node.js 22 or later so MCP Inspector can run with npx.</li></ol><section class="warning"><strong>Cost and cleanup:</strong> Azure Search, models, hosted agents, storage, browser workspaces, and optimization jobs can incur charges. Use instructor-provided resources where possible and follow your organization's cleanup policy after class.</section>
+  <h2 id="build">Build the lab in modules</h2><section class="file-build"><h3>Use case 1 — Create the MCP server</h3><p>Register deterministic change tools, one catalog resource, and one reusable prompt.</p><div class="file-target"><strong>Create:</strong> <code>13_mcp/demo.py</code> <a href="../13_mcp/demo.py" target="_blank">View supplied reference file</a></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">1</div><div class="step-body"><h4>Import the required libraries</h4><p>Add only the SDK types used by this part of the lab.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>&quot;&quot;&quot;A small Streamable HTTP MCP server for the classroom.&quot;&quot;&quot;
+
+import json
+import os
+
+from mcp.server.fastmcp import FastMCP
+
+
+CHANGES = {
+    &quot;CHG-1001&quot;: {
+        &quot;title&quot;: &quot;Rotate a development certificate&quot;,
+        &quot;change_type&quot;: &quot;standard&quot;,
+        &quot;downtime_minutes&quot;: 0,
+        &quot;rollback_plan&quot;: True,
+    },
+    &quot;CHG-1002&quot;: {
+        &quot;title&quot;: &quot;Upgrade the customer portal database&quot;,
+        &quot;change_type&quot;: &quot;normal&quot;,
+        &quot;downtime_minutes&quot;: 30,
+        &quot;rollback_plan&quot;: True,
+    },
+    &quot;CHG-1003&quot;: {
+        &quot;title&quot;: &quot;Emergency payment gateway patch&quot;,
+        &quot;change_type&quot;: &quot;emergency&quot;,
+        &quot;downtime_minutes&quot;: 90,
+        &quot;rollback_plan&quot;: False,</code></pre></div></div></article><article class="step-card"><div class="step-number">2</div><div class="step-body"><h4>Add implementation module 2</h4><p>Paste this block after the previous module and review how it advances the scenario.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    },
+}
+
+mcp = FastMCP(
+    &quot;Contoso Change Risk&quot;,
+    instructions=&quot;Use only the fictional Contoso change records in this server.&quot;,
+    host=os.getenv(&quot;HOST&quot;, &quot;0.0.0.0&quot;),
+    port=int(os.getenv(&quot;PORT&quot;, &quot;8000&quot;)),
+    streamable_http_path=&quot;/mcp&quot;,
+    stateless_http=True,
+    json_response=True,
+)
+
+
+def required_change(change_id: str) -&gt; dict:
+    &quot;&quot;&quot;Return one known classroom record or a clear tool error.&quot;&quot;&quot;
+
+    change = CHANGES.get(change_id.upper())
+    if change is None:
+        raise ValueError(f&quot;Unknown change ID. Use one of: {', '.join(CHANGES)}&quot;)
+    return change
+
+
+@mcp.tool()</code></pre></div></div></article><article class="step-card"><div class="step-number">3</div><div class="step-body"><h4>Define the application capability</h4><p>Create the typed tool or helper that supplies trusted application behavior.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>def get_change_record(change_id: str) -&gt; dict:
+    &quot;&quot;&quot;Get one fictional change record, for example CHG-1003.&quot;&quot;&quot;
+
+    return {&quot;change_id&quot;: change_id.upper(), **required_change(change_id)}
+
+
+@mcp.tool()
+def assess_change_risk(change_id: str) -&gt; dict:
+    &quot;&quot;&quot;Calculate a deterministic low, medium, or high risk rating.&quot;&quot;&quot;
+
+    change = required_change(change_id)
+    score = {&quot;standard&quot;: 0, &quot;normal&quot;: 2, &quot;emergency&quot;: 3}[change[&quot;change_type&quot;]]
+    score += change[&quot;downtime_minutes&quot;] // 30
+    if not change[&quot;rollback_plan&quot;]:
+        score += 2
+    level = &quot;high&quot; if score &gt;= 5 else &quot;medium&quot; if score &gt;= 2 else &quot;low&quot;
+    return {&quot;change_id&quot;: change_id.upper(), &quot;score&quot;: score, &quot;level&quot;: level}
+
+
+@mcp.resource(&quot;change://catalog&quot;)
+def change_catalog() -&gt; str:
+    &quot;&quot;&quot;List the fictional change IDs available in this server.&quot;&quot;&quot;
+
+    items = [{&quot;change_id&quot;: key, &quot;title&quot;: value[&quot;title&quot;]} for key, value in CHANGES.items()]
+    return json.dumps({&quot;changes&quot;: items}, indent=2)</code></pre></div></div></article><article class="step-card"><div class="step-number">4</div><div class="step-body"><h4>Run and inspect the scenario</h4><p>Execute the lab task and expose the result needed for validation.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>@mcp.prompt(name=&quot;change-readiness-review&quot;)
+def change_readiness_review(change_id: str) -&gt; str:
+    &quot;&quot;&quot;Return a reusable instruction for reviewing one change.&quot;&quot;&quot;
+
+    return (
+        f&quot;Review {change_id}. First call get_change_record, then assess_change_risk. &quot;
+        &quot;Explain the result using only tool output and do not claim the change was executed.&quot;
+    )
+
+
+if __name__ == &quot;__main__&quot;:
+    mcp.run(transport=&quot;streamable-http&quot;)</code></pre></div></div></article></section><section class="file-build"><h3>Use case 2 — Containerize the server</h3><p>Package the same Streamable HTTP server for Azure Container Apps.</p><div class="file-target"><strong>Create:</strong> <code>13_mcp/Dockerfile</code> <a href="../13_mcp/Dockerfile" target="_blank">View supplied reference file</a></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">5</div><div class="step-body"><h4>Add implementation module 5</h4><p>Paste this block after the previous module and review how it advances the scenario.</p><div class="code-shell"><div class="code-head"><span>Dockerfile</span><button class="copy-button" type="button">Copy</button></div><pre><code>FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    HOST=0.0.0.0 \
+    PORT=8000
+
+WORKDIR /app
+
+COPY requirements.txt ./
+RUN python -m pip install --no-cache-dir -r requirements.txt
+
+COPY demo.py ./
+
+EXPOSE 8000
+
+CMD [&quot;python&quot;, &quot;demo.py&quot;]</code></pre></div></div></article></section><h3>Supplied supporting files</h3><p>These files are already part of the repository. Inspect or reuse them rather than retyping them.</p><ul><li><a href="../13_mcp/requirements.txt" target="_blank"><code>13_mcp/requirements.txt</code></a></li><li><a href="../13_mcp/.dockerignore" target="_blank"><code>13_mcp/.dockerignore</code></a></li></ul>
+  <h2 id="run">Run and validate</h2><section class="notice">Use two terminals locally: keep the Python server running in the first, then run MCP Inspector in the second. Stop the local server before connecting Inspector to the shared Azure endpoint.</section><h3>Run the completed files</h3><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python .\13_mcp\demo.py
+npx.cmd --yes --package @modelcontextprotocol/inspector mcp-inspector --web --server-url http://127.0.0.1:8000/mcp --transport http</code></pre></div><h3>Connect Inspector to the existing authenticated Azure deployment</h3><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>$env:MCP_SERVER_URL = (Get-Content .env | Where-Object { $_ -like 'MCP_SERVER_URL=*' } | Select-Object -First 1).Split('=', 2)[1]
+$env:MCP_API_KEY = (Get-Content .env | Where-Object { $_ -like 'MCP_API_KEY=*' } | Select-Object -First 1).Split('=', 2)[1]
+
+npx.cmd --yes --package @modelcontextprotocol/inspector mcp-inspector --web --server-url $env:MCP_SERVER_URL --transport http --header &quot;X-API-Key: $env:MCP_API_KEY&quot;</code></pre></div><h3>Expected result</h3><ul><li>Local Inspector lists get_change_record and assess_change_risk, the change://catalog resource, and the change-readiness-review prompt.</li><li>Calling the local assess_change_risk tool with CHG-1003 returns score 8 and level high.</li><li>Remote Inspector connects only when the X-API-Key header is supplied and lists the shared server capabilities.</li></ul><section class="checkpoint"><strong>Completion checkpoint:</strong> Do not mark the lab complete until the observed output matches these conditions.</section><h3>Five-minute challenge</h3><p>Compare CHG-1001 and CHG-1003 on the shared server and explain which returned fields justify their different risk levels.</p>
+  <h2 id="knowledge-check">Knowledge check</h2><div class="knowledge-list"><section class="question" data-answer="3"><div class="question-number">1</div><div class="question-body"><h3>Which statement best describes the central concept in Lab 06?</h3><label class="option"><input type="radio" name="13-q0" value="0"><span>It removes the need for model authentication and authorization.</span></label><label class="option"><input type="radio" name="13-q0" value="1"><span>It stores provider credentials directly in Python source.</span></label><label class="option"><input type="radio" name="13-q0" value="2"><span>It automatically deploys every Azure resource without configuration.</span></label><label class="option"><input type="radio" name="13-q0" value="3"><span>An MCP server publishes typed tools, resources, and prompts independently of any particular LLM client.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="3"><div class="question-number">2</div><div class="question-body"><h3>Which setup choice matches this lab?</h3><label class="option"><input type="radio" name="13-q1" value="0"><span>Hard-code every credential so the code is self-contained.</span></label><label class="option"><input type="radio" name="13-q1" value="1"><span>Skip role assignments because successful sign-in grants every permission.</span></label><label class="option"><input type="radio" name="13-q1" value="2"><span>Use real customer data before validating the classroom scenario.</span></label><label class="option"><input type="radio" name="13-q1" value="3"><span>Test the local Streamable HTTP endpoint first, then send the instructor-provided X-API-Key header to the existing Azure endpoint.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="3"><div class="question-number">3</div><div class="question-body"><h3>What evidence proves that the lab worked?</h3><label class="option"><input type="radio" name="13-q2" value="0"><span>The Python file exists, even if it was not run.</span></label><label class="option"><input type="radio" name="13-q2" value="1"><span>The script compiled, but its output was not inspected.</span></label><label class="option"><input type="radio" name="13-q2" value="2"><span>The model returned any fluent answer, regardless of the expected behavior.</span></label><label class="option"><input type="radio" name="13-q2" value="3"><span>Inspector calls the local server and the authenticated shared server without exposing the API key in source code.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section></div>
+  <h2>Summary of learning</h2><ul><li>Create a Python FastMCP server with tools, a resource, and a prompt</li><li>Test the local Streamable HTTP endpoint with MCP Inspector</li><li>Connect Inspector to the instructor-provided authenticated Azure endpoint</li></ul>
+  <h2 id="sources">Microsoft documentation and sample references</h2><ul><li><a href="https://github.com/modelcontextprotocol/python-sdk" target="_blank" rel="noreferrer">MCP Python SDK</a></li><li><a href="https://github.com/modelcontextprotocol/inspector" target="_blank" rel="noreferrer">MCP Inspector</a></li><li><a href="https://learn.microsoft.com/en-us/agent-framework/" target="_blank" rel="noreferrer">Microsoft Agent Framework documentation</a></li></ul><section class="notice"><strong>Version boundary:</strong> The lab code uses the versions pinned in the root <code>requirements.txt</code>. Preview documentation can move ahead of those packages, so upgrade only after rerunning the validation suite.</section>
+  <div class="completion"><label><input type="checkbox" data-lab-complete="13"> Mark Lab 06 complete</label></div>
+  <nav class="lab-pager"><a href="05-tool-approval.html">← Lab 05: Require Approval Before a Tool Runs</a><a href="27-mcp-agent-client.html">Lab 07: Use an Authenticated MCP Server from Agent Framework →</a></nav>
+</main><script src="assets/lab.js"></script></body></html>
