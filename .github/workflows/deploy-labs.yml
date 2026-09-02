@@ -30,10 +30,23 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
+      - name: Assemble the public course site
+        run: |
+          mkdir -p "$RUNNER_TEMP/site"
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.env' \
+            --exclude='venv' \
+            --exclude='__pycache__' \
+            --exclude='html_labs' \
+            ./ "$RUNNER_TEMP/site/"
+          rsync -a html_labs/ "$RUNNER_TEMP/site/"
+
       - name: Upload lab workbook
         uses: actions/upload-pages-artifact@v3
         with:
-          path: html_labs
+          path: ${{ runner.temp }}/site
 
       - name: Deploy
         id: deployment
