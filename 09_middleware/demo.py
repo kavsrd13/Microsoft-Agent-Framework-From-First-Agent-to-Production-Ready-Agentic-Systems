@@ -9,6 +9,8 @@ from agent_framework import (
     AgentContext,
     AgentMiddleware,
     AgentResponse,
+    ChatContext,
+    ChatMiddleware,
     FunctionInvocationContext,
     FunctionMiddleware,
     Message,
@@ -51,6 +53,20 @@ class TimingMiddleware(FunctionMiddleware):
         print(f"[middleware] {context.function.name} took {time.perf_counter() - started:.4f}s")
 
 
+class TokenUsageMiddleware(ChatMiddleware):
+    """Logs token usage per chat call and accumulates a running total."""
+
+    def __init__(self) -> None:
+        self.total_tokens = 0
+
+    async def process(self, context: ChatContext, call_next: Callable[[], Awaitable[None]]) -> None:
+        await call_next()
+        usage = getattr(context.result, "usage_details", None) if context.result else None
+        tokens = (usage or {}).get("total_token_count") or 0
+        self.total_tokens += tokens
+        print(f"[middleware] chat call used {tokens} tokens (running total: {self.total_tokens})")
+
+
 async def main() -> None:
     agent = Agent(
         client=FoundryChatClient(
@@ -61,7 +77,7 @@ async def main() -> None:
         name="WeatherAgent",
         instructions="Use the tool for weather questions.",
         tools=[get_weather],
-        middleware=[SecurityMiddleware(), TimingMiddleware()],
+        middleware=[SecurityMiddleware(), TimingMiddleware(), TokenUsageMiddleware()],
     )
 
     print((await agent.run("What is the weather in Seattle?")).text)

@@ -1,4 +1,4 @@
-# Microsoft Agent Framework demos with Microsoft Foundry
+# Microsoft Foundry and Agent Framework course labs
 
 Independent, classroom-sized Python demos based on the current Microsoft Learn documentation and the official Microsoft Agent Framework Python samples. Every demo uses `FoundryChatClient` with a Microsoft Foundry project endpoint and classroom authentication through `AzureCliCredential()`.
 
@@ -65,35 +65,37 @@ Run each demo from the project root so the shared `.env` file is found:
 .\venv\Scripts\python.exe .\01_agent_creation\demo.py
 ```
 
-Use the teaching order below. Folder numbers are stable identifiers, so the course can improve its flow without renaming files.
+The participant workbook begins with six official Microsoft Foundry exercises linked from `html_labs/index.html`. These cover the portal and project, model comparison and evaluation, Responses API applications, tools, content filters, and agent creation with the portal and VS Code. The local Agent Framework workbook then starts at displayed Lab 07.
 
-| Folder | Topic |
-|---|---|
-| `00_client`, `01_agent_creation`, `02_streaming` | Combined Lab 00: configure clients, create and run an `Agent`, then stream response updates |
-| `03_structured_output` | Pydantic response format |
-| `04_function_tools`, `05_tool_approval` | Combined Lab 02: local function tools and human approval before a simulated action |
-| `13_mcp` | Build and inspect a Python MCP server, then validate the shared authenticated Azure deployment; optional MCP Apps instructor demo |
-| `27_mcp_agent_client` | Use the shared authenticated MCP server from an Agent Framework agent |
-| `06_sessions` | Multi-turn `AgentSession` |
-| `07_context_provider` | Dynamic context and session state |
-| `08_memory` | File-backed memory shared across sessions |
-| `09_middleware` | Agent and function middleware |
-| `10_observability` | OpenTelemetry tracing and a local HTML metrics dashboard |
-| `11_evaluation` | Built-in and custom local evaluators |
-| `22_development_lifecycle` | Baseline-versus-candidate evaluation and release decision |
-| `12_rag_azure_ai_search` | RAG through Azure AI Search |
-| `20_agentic_retrieval` | Classic RAG versus agentic retrieval with activity and citations |
-| `21_identity_aware_rag` | Permission-aware RAG using Entra identity and Search ACL enforcement |
-| `14_workflow_basics` | Functional workflow with agents |
-| `15_workflow_hitl` | Paused/resumed human review workflow |
-| `16_multi_agent_sequential` | Sequential orchestration |
-| `17_multi_agent_concurrent` | Concurrent fan-out/fan-in |
-| `18_multi_agent_handoff` | Triage-to-specialist handoff |
-| `19_multi_agent_group_chat` | Round-robin group chat |
-| `23_hosted_agent_basic` | Responses-compatible Hosted agent |
-| `24_hosted_agent_identity` | Passwordless access from the agent to Blob Storage |
-| `25_agent_optimizer` | Evaluation-driven Hosted-agent optimization |
-| `26_browser_automation` | Safe Browser Automation capstone using the official sample |
+Use the Agent Framework teaching order below. Folder numbers are stable identifiers, so the course can improve its flow without renaming files.
+
+| Displayed lab | Source folder | Topic |
+|---|---|---|
+| 07 | `00_client`, `01_agent_creation`, `02_streaming` | Configure clients, create and run an `Agent`, then stream response updates |
+| 08 | `03_structured_output` | Pydantic response format |
+| 09 | `04_function_tools`, `05_tool_approval` | Local function tools and human approval before a simulated action |
+| 10 | `13_mcp` | Build and inspect a Python MCP server, then validate the shared authenticated Azure deployment; optional MCP Apps instructor demo |
+| 11 | `27_mcp_agent_client` | Use the shared authenticated MCP server from an Agent Framework agent |
+| 12 | `06_sessions` | Multi-turn `AgentSession` |
+| 13 | `07_context_provider` | Dynamic context and session state |
+| 14 | `08_memory` | File-backed memory shared across sessions |
+| 15 | `09_middleware` | Agent and function middleware |
+| 16 | `10_observability` | OpenTelemetry tracing and a local HTML metrics dashboard |
+| 17 | `11_evaluation` | Built-in and custom local evaluators |
+| 18 | `22_development_lifecycle` | Baseline-versus-candidate evaluation and release decision |
+| 19 | `12_rag_azure_ai_search` | RAG through Azure AI Search |
+| 20 | `20_agentic_retrieval` | Classic RAG versus agentic retrieval with activity and citations |
+| 21 | `21_identity_aware_rag` | Permission-aware RAG using Entra identity and Search ACL enforcement |
+| 22 | `14_workflow_basics` | Functional workflow with agents |
+| 23 | `15_workflow_hitl` | Paused/resumed human review workflow |
+| 24 | `16_multi_agent_sequential` | Sequential orchestration |
+| 25 | `17_multi_agent_concurrent` | Concurrent fan-out/fan-in |
+| 26 | `18_multi_agent_handoff` | Triage-to-specialist handoff |
+| 27 | `19_multi_agent_group_chat` | Round-robin group chat |
+| 28 | `23_hosted_agent_basic` | Responses-compatible Hosted agent |
+| 29 | `24_hosted_agent_identity` | Passwordless access from the agent to Blob Storage |
+| 30 | `25_agent_optimizer` | Evaluation-driven Hosted-agent optimization |
+| 31 | `26_browser_automation` | Safe Browser Automation capstone using the official sample |
 
 See [LAB_GUIDE.md](LAB_GUIDE.md) for the classroom story and five-minute challenge for every lab.
 

@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import time
+import webbrowser
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated
@@ -66,24 +67,34 @@ async def main() -> None:
             try:
                 result = await agent.run(prompt)
                 usage = result.usage_details or {}
+                prompt_tokens = token_count(usage, "prompt_token_count") or token_count(usage, "input_token_count")
+                input_tokens = token_count(usage, "input_token_count")
+                output_tokens = token_count(usage, "output_token_count")
+                total_tokens = token_count(usage, "total_token_count")
                 runs.append(
                     {
                         "label": label,
                         "success": True,
                         "latency_ms": round((time.perf_counter() - started) * 1000, 1),
-                        "input_tokens": token_count(usage, "input_token_count"),
-                        "output_tokens": token_count(usage, "output_token_count"),
-                        "total_tokens": token_count(usage, "total_token_count"),
+                        "prompt_tokens": prompt_tokens,
+                        "input_tokens": input_tokens,
+                        "output_tokens": output_tokens,
+                        "total_tokens": total_tokens,
                         "error_type": "",
                     }
                 )
                 print(f"\n{label}: {result.text}")
+                print(
+                    f"  tokens -> prompt: {prompt_tokens}, input: {input_tokens}, "
+                    f"output: {output_tokens}, total: {total_tokens}"
+                )
             except Exception as error:
                 runs.append(
                     {
                         "label": label,
                         "success": False,
                         "latency_ms": round((time.perf_counter() - started) * 1000, 1),
+                        "prompt_tokens": 0,
                         "input_tokens": 0,
                         "output_tokens": 0,
                         "total_tokens": 0,
@@ -120,6 +131,7 @@ async def main() -> None:
     output = folder / "agent_metrics_dashboard.html"
     output.write_text(dashboard, encoding="utf-8")
     print(f"\nDashboard created: {output.resolve()}")
+    webbrowser.open(output.resolve().as_uri())
 
 
 if __name__ == "__main__":
