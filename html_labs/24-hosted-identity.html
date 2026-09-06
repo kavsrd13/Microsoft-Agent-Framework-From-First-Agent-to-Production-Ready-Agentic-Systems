@@ -15,7 +15,7 @@
     <section class="notice"><strong>Use the project root.</strong> Run every command from <code>microsoft-agent-framework-demos</code> unless the lab explicitly changes folders. Commands use PowerShell on Windows.</section>
     <h3>Step 1 — Verify prerequisites</h3>
     <ul class="checklist">
-      <li><label><input type="checkbox" data-progress="24-python"> Python 3.12 is installed.</label></li>
+      <li><label><input type="checkbox" data-progress="24-python"> Python 3.13 is installed.</label></li>
       <li><label><input type="checkbox" data-progress="24-cli"> Azure CLI is installed.</label></li>
       <li><label><input type="checkbox" data-progress="24-editor"> VS Code or another Python editor is available.</label></li>
       <li><label><input type="checkbox" data-progress="24-access"> Required Azure access described below is available.</label></li>
@@ -57,6 +57,7 @@ az role assignment create --assignee-object-id $userId --assignee-principal-type
 az storage container create --account-name $storageAccount --name agent-framework-demos --auth-mode login --public-access off
 az storage blob upload --account-name $storageAccount --container-name agent-framework-demos --name travel-policy.txt --file .\24_hosted_agent_identity\sample_travel_policy.txt --auth-mode login --overwrite</code></pre></div><section class="warning"><strong>Cost and cleanup:</strong> Azure Search, models, hosted agents, storage, browser workspaces, and optimization jobs can incur charges. Use instructor-provided resources where possible and follow your organization's cleanup policy after class.</section>
   <h2 id="build">Build the lab in modules</h2><section class="file-build"><h3>Module file — Identity-aware Hosted agent</h3><p>Share one credential between Foundry and the Blob-reading tool.</p><div class="file-target"><strong>Create:</strong> <code>24_hosted_agent_identity/student_main.py</code></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">1</div><div class="step-body"><h4>Import the required libraries</h4><p>Add only the SDK types used by this part of the lab.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import os
+from pathlib import Path
 
 from agent_framework import Agent
 from agent_framework.foundry import FoundryChatClient, ResponsesHostServer
@@ -64,7 +65,7 @@ from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobClient
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parents[1] / &quot;.env&quot;)
 
 def main():
     credential = DefaultAzureCredential()
@@ -79,7 +80,7 @@ def main():
         )
         return blob.download_blob().readall().decode(&quot;utf-8&quot;)</code></pre></div></div></article><article class="step-card"><div class="step-number">2</div><div class="step-body"><h4>Load configuration</h4><p>Read endpoints, model names, and non-secret settings from the project environment.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    client = FoundryChatClient(
         project_endpoint=os.environ[&quot;FOUNDRY_PROJECT_ENDPOINT&quot;],
-        model=os.getenv(&quot;AZURE_AI_MODEL_DEPLOYMENT_NAME&quot;) or os.environ[&quot;FOUNDRY_MODEL&quot;],
+        model=os.environ[&quot;FOUNDRY_MODEL&quot;],
         credential=credential,
     )
 
@@ -105,17 +106,17 @@ protocols:
   - protocol: responses
     version: 2.0.0
 resources:
-  cpu: &quot;0.25&quot;
-  memory: &quot;0.5Gi&quot;
+  cpu: &quot;0.5&quot;
+  memory: &quot;1Gi&quot;
 environment_variables:
-  - name: AZURE_AI_MODEL_DEPLOYMENT_NAME
-    value: ${AZURE_AI_MODEL_DEPLOYMENT_NAME}
+  - name: FOUNDRY_MODEL
+    value: ${FOUNDRY_MODEL}
   - name: AZURE_STORAGE_ACCOUNT_URL
     value: ${AZURE_STORAGE_ACCOUNT_URL}
   - name: AZURE_STORAGE_CONTAINER_NAME
     value: ${AZURE_STORAGE_CONTAINER_NAME}
   - name: AZURE_STORAGE_BLOB_NAME
-    value: ${AZURE_STORAGE_BLOB_NAME}</code></pre></div></div></article></section><section class="file-build"><h3>Configuration file — Container</h3><p>Package the agent server.</p><div class="file-target"><strong>Create:</strong> <code>24_hosted_agent_identity/student_Dockerfile</code></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">4</div><div class="step-body"><h4>Add implementation module 4</h4><p>Paste this block after the previous module and review how it advances the scenario.</p><div class="code-shell"><div class="code-head"><span>Dockerfile</span><button class="copy-button" type="button">Copy</button></div><pre><code>FROM python:3.12-slim
+    value: ${AZURE_STORAGE_BLOB_NAME}</code></pre></div></div></article></section><section class="file-build"><h3>Configuration file — Container</h3><p>Package the agent server.</p><div class="file-target"><strong>Create:</strong> <code>24_hosted_agent_identity/student_Dockerfile</code></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">4</div><div class="step-body"><h4>Add implementation module 4</h4><p>Paste this block after the previous module and review how it advances the scenario.</p><div class="code-shell"><div class="code-head"><span>Dockerfile</span><button class="copy-button" type="button">Copy</button></div><pre><code>FROM python:3.13-slim
 
 WORKDIR /app
 COPY . .
@@ -130,7 +131,21 @@ python-dotenv&gt;=1.0.1</code></pre></div></div></article></section><h3>Supplied
   <h2 id="run">Run and validate</h2><h3>Run the completed files</h3><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>cd .\24_hosted_agent_identity
 ..\venv\Scripts\python.exe .\student_main.py
 # Stop the local server with Ctrl+C</code></pre></div><h3>Expected result</h3><ul><li>The local Responses host starts on port 8088.</li><li>A policy question triggers read_travel_policy and succeeds only when the current identity has Blob read permission.</li></ul><section class="checkpoint"><strong>Completion checkpoint:</strong> Do not mark the lab complete until the observed output matches these conditions.</section><h3>Five-minute challenge</h3><p>Remove the reader role, repeat the request, and explain why successful authentication does not imply authorization.</p>
-  <h2 id="knowledge-check">Knowledge check</h2><div class="knowledge-list"><section class="question" data-answer="0"><div class="question-number">1</div><div class="question-body"><h3>Which statement best describes the central concept in Lab 29?</h3><label class="option"><input type="radio" name="24-q0" value="0"><span>Hosted-agent identity provides passwordless service-to-service authentication, while RBAC grants resource access.</span></label><label class="option"><input type="radio" name="24-q0" value="1"><span>It removes the need for model authentication and authorization.</span></label><label class="option"><input type="radio" name="24-q0" value="2"><span>It stores provider credentials directly in Python source.</span></label><label class="option"><input type="radio" name="24-q0" value="3"><span>It automatically deploys every Azure resource without configuration.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="0"><div class="question-number">2</div><div class="question-body"><h3>Which setup choice matches this lab?</h3><label class="option"><input type="radio" name="24-q1" value="0"><span>Grant Blob Data Reader to the local or hosted identity and never use the account key.</span></label><label class="option"><input type="radio" name="24-q1" value="1"><span>Hard-code every credential so the code is self-contained.</span></label><label class="option"><input type="radio" name="24-q1" value="2"><span>Skip role assignments because successful sign-in grants every permission.</span></label><label class="option"><input type="radio" name="24-q1" value="3"><span>Use real customer data before validating the classroom scenario.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="0"><div class="question-number">3</div><div class="question-body"><h3>What evidence proves that the lab worked?</h3><label class="option"><input type="radio" name="24-q2" value="0"><span>The policy tool reads the private Blob only when the active identity is authorized.</span></label><label class="option"><input type="radio" name="24-q2" value="1"><span>The Python file exists, even if it was not run.</span></label><label class="option"><input type="radio" name="24-q2" value="2"><span>The script compiled, but its output was not inspected.</span></label><label class="option"><input type="radio" name="24-q2" value="3"><span>The model returned any fluent answer, regardless of the expected behavior.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section></div>
+  <h2 id="deploy-foundry">Deploy and invoke in Microsoft Foundry</h2>
+<p>Use the complete deployment walkthrough in <a href="../24_hosted_agent_identity/README.md">the lab README</a>. This Python SDK path reuses your existing project and model and creates a hosted version. It does not require azd. Use the repository-root .env with FOUNDRY_PROJECT_ENDPOINT and FOUNDRY_MODEL, plus the three AZURE_STORAGE settings.</p>
+<p>From the lab folder, stop the local server and run:</p>
+<pre><code>..\venv\Scripts\python.exe -m pip install -r requirements-deploy.txt
+az login
+# If you completed student_main.py, use it as the deployment entry point:
+Copy-Item .\student_main.py .\main.py
+..\venv\Scripts\python.exe .\deploy.py</code></pre>
+<p><a href="../24_hosted_agent_identity/deploy.py">deploy.py</a> packages only main.py and requirements.txt, uploads the source, waits for an active version, then routes the Foundry endpoint to it. The deployed version is retained for teaching. Your .env is not uploaded.</p>
+<p>Before invoking, locate the deployed agent identity in Foundry and grant it Storage Blob Data Reader on the private container. Your developer permissions do not transfer to the agent. Wait for role propagation.</p>
+<pre><code>..\venv\Scripts\python.exe .\invoke.py</code></pre>
+<p><a href="../24_hosted_agent_identity/invoke.py">invoke.py</a> calls the cloud endpoint. The local server should remain stopped. Confirm a model answer based on travel-policy.txt before marking the lab complete.</p>
+<p>Changing and rerunning deploy.py creates another version and routes this lab agent's traffic to it. Remove unneeded classroom versions in Foundry after the lesson.</p>
+<p>Source: <a href="https://learn.microsoft.com/azure/foundry/agents/quickstarts/quickstart-hosted-agent">Microsoft Learn: deploy a Hosted Agent with Python</a>.</p>
+<h2 id="knowledge-check">Knowledge check</h2><div class="knowledge-list"><section class="question" data-answer="0"><div class="question-number">1</div><div class="question-body"><h3>Which statement best describes the central concept in Lab 29?</h3><label class="option"><input type="radio" name="24-q0" value="0"><span>Hosted-agent identity provides passwordless service-to-service authentication, while RBAC grants resource access.</span></label><label class="option"><input type="radio" name="24-q0" value="1"><span>It removes the need for model authentication and authorization.</span></label><label class="option"><input type="radio" name="24-q0" value="2"><span>It stores provider credentials directly in Python source.</span></label><label class="option"><input type="radio" name="24-q0" value="3"><span>It automatically deploys every Azure resource without configuration.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="0"><div class="question-number">2</div><div class="question-body"><h3>Which setup choice matches this lab?</h3><label class="option"><input type="radio" name="24-q1" value="0"><span>Grant Blob Data Reader to the local or hosted identity and never use the account key.</span></label><label class="option"><input type="radio" name="24-q1" value="1"><span>Hard-code every credential so the code is self-contained.</span></label><label class="option"><input type="radio" name="24-q1" value="2"><span>Skip role assignments because successful sign-in grants every permission.</span></label><label class="option"><input type="radio" name="24-q1" value="3"><span>Use real customer data before validating the classroom scenario.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="0"><div class="question-number">3</div><div class="question-body"><h3>What evidence proves that the lab worked?</h3><label class="option"><input type="radio" name="24-q2" value="0"><span>The policy tool reads the private Blob only when the active identity is authorized.</span></label><label class="option"><input type="radio" name="24-q2" value="1"><span>The Python file exists, even if it was not run.</span></label><label class="option"><input type="radio" name="24-q2" value="2"><span>The script compiled, but its output was not inspected.</span></label><label class="option"><input type="radio" name="24-q2" value="3"><span>The model returned any fluent answer, regardless of the expected behavior.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section></div>
   <h2>Summary of learning</h2><ul><li>Create and populate a Blob container</li><li>Grant narrowly scoped Blob data access</li><li>Read the policy with DefaultAzureCredential from an agent tool</li></ul>
   <h2 id="sources">Microsoft documentation and sample references</h2><ul><li><a href="https://learn.microsoft.com/azure/foundry/agents/concepts/agent-identity" target="_blank" rel="noreferrer">Agent identity</a></li><li><a href="https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents" target="_blank" rel="noreferrer">Hosted agents</a></li><li><a href="https://learn.microsoft.com/azure/storage/blobs/authorize-access-azure-active-directory" target="_blank" rel="noreferrer">Authorize access to Blob Storage with Microsoft Entra ID</a></li><li><a href="https://learn.microsoft.com/en-us/agent-framework/" target="_blank" rel="noreferrer">Microsoft Agent Framework documentation</a></li></ul><section class="notice"><strong>Version boundary:</strong> The lab code uses the versions pinned in the root <code>requirements.txt</code>. Preview documentation can move ahead of those packages, so upgrade only after rerunning the validation suite.</section>
   <div class="completion"><label><input type="checkbox" data-lab-complete="24"> Mark Lab 29 complete</label></div>

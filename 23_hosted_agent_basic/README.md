@@ -1,43 +1,97 @@
-# Demo 23 - Basic Hosted agent
+# Deploy your Agent Framework agent to Foundry
 
-## Teaching goal
+This exercise uses the Python SDK source-upload path from [Microsoft Learn](https://learn.microsoft.com/azure/foundry/agents/quickstarts/quickstart-hosted-agent).
+The existing Foundry project and model are reused. No Azure Developer CLI or local Docker build is needed for this path.
+Running deploy.py creates a billable hosted version and routes 100% of this lab agent's endpoint traffic to it.
+It deliberately keeps the version deployed for the classroom; repeating it creates another version.
 
-Show that the Agent Framework `Agent` remains simple. `ResponsesHostServer` adds a Responses-compatible service boundary, and Foundry supplies the deployment environment.
+## 1. Prepare
 
-## Local demonstration
+Use Python 3.13 or later and an existing Foundry project in a region supporting Hosted Agents.
+The deploying user needs Foundry Project Manager at project scope, plus the permissions listed in
+[Hosted agent permissions](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents).
 
-From this folder, activate the root environment and run:
+
+From the repository root, reuse your course environment (or create it once):
 
 ```powershell
-..\venv\Scripts\Activate.ps1
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m pip install -r 23_hosted_agent_basic/requirements-deploy.txt
+az login
+```
+
+## 2. Configure one .env file
+
+Edit only the repository-root .env. The scripts explicitly load it regardless of the current working directory.
+Use the full project endpoint copied from Foundry, including /api/projects/<project>.
+Use the actual deployment name for FOUNDRY_MODEL.
+
+```dotenv
+FOUNDRY_PROJECT_ENDPOINT=https://<account>.services.ai.azure.com/api/projects/<project>
+FOUNDRY_MODEL=<your-model-deployment-name>
+```
+
+Do not add storage keys. Existing process environment variables take precedence over .env; clear stale values before running.
+The upload contains only main.py and requirements.txt. Settings are supplied explicitly to the hosted runtime.
+
+## 3. Understand and test main.py
+
+FoundryChatClient calls the model. Agent defines instructions.
+ResponsesHostServer exposes the agent through the Responses protocol.
+DefaultAzureCredential can use your developer sign-in locally and the agent identity in Foundry.
+
+```powershell
+cd 23_hosted_agent_basic
 python main.py
 ```
 
-The server listens on `http://localhost:8088`. Open Agent Inspector in the Foundry Toolkit, or use the official quickstart invocation flow.
+Use Foundry Toolkit's Agent Inspector against localhost:8088. Ask:
+"How should I request an exception to my company's travel policy?"
 
-## Hosted deployment flow
+Stop the server with Ctrl+C.
 
-Use the Microsoft sample manifest to initialize the deployable project, and then compare its `main.py` with this teaching version:
+## 4. Deploy the same code
 
 ```powershell
-$env:AZURE_DEV_USER_AGENT='microsoft_foundry_skill'; azd ai agent init -m https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/agent-framework/responses/01-basic/azure.yaml
+python deploy.py
 ```
 
-After initialization, replace only the generated agent's `main.py` and requirements with the files in this folder. Then use the quickstart's provision, local-run, and deploy steps.
+Teach deploy.py in its numbered sequence:
+1. Read the shared .env and select the lab agent name.
+2. ZIP only main.py and requirements.txt into memory.
+3. Upload with create_version_from_code. Foundry builds dependencies remotely using Python 3.13.
+4. Poll until the version is active (up to ten minutes).
+5. Route the agent endpoint to the new version and print its URL.
 
-## Student lab
+The script uses AzureCliCredential for deployment. The uploaded runtime uses DefaultAzureCredential.
+If provisioning fails or times out, inspect the created version in Foundry before rerunning.
+The script does not delete failed versions or replace an existing route before a version becomes active.
 
-Change only the `instructions` value so the agent:
+## 5. Invoke in Azure
 
-1. Gives a short answer.
-2. Does not invent travel policies.
-3. Escalates policy exceptions to a human.
+```powershell
+python invoke.py
+```
 
-Keep the client and `ResponsesHostServer` structure unchanged.
+The local main.py server can remain stopped. invoke.py calls the deployed agent endpoint using your CLI sign-in.
+Open your project in Foundry, find travel-policy-hosted-agent, and inspect the version and logs.
 
-## Microsoft sources
+Completion: a hosted version is active, its endpoint is routed, and invoke.py returns a real model answer.
 
-- [Hosted agents](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents)
-- [Deploy your own code](https://learn.microsoft.com/azure/foundry/agents/quickstarts/quickstart-deploy-own-code?tabs=responses)
-- [Official Agent Framework Hosted-agent sample](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/agent-framework/responses/01-basic)
 
+## Student exercise
+
+Change the instructions to give brief answers, avoid invented policies, and refer exceptions to a human. Put the finished code in main.py before deployment.
+deploy.py always packages main.py, not student_main.py or lab/starter.py.
+
+## Cleanup
+
+Delete only these classroom hosted-agent versions when finished. Do not delete a shared Foundry project or resource group.
+This example intentionally leaves the deployed version available until you remove it.
+
+## References
+
+- [Hosted Agents](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents)
+- [Python deployment quickstart](https://learn.microsoft.com/azure/foundry/agents/quickstarts/quickstart-hosted-agent)
+- [Agent identity](https://learn.microsoft.com/azure/foundry/agents/concepts/agent-identity)
