@@ -432,7 +432,29 @@ const labs = [
   },
 ];
 
-const teachingOrder = ["00", "03", "04", "13", "27", "06", "07", "08", "09", "10", "11", "22", "12", "20", "21", "14", "15", "16", "17", "18", "19", "23", "24", "25", "26"];
+// Keep the two source projects, but teach them as one end-to-end MCP lab.
+const mcpServer = labs.find((lab) => lab.id === "13");
+const mcpClient = labs.find((lab) => lab.id === "27");
+const mcpServerPart = { ...mcpServer };
+Object.assign(mcpServer, {
+  title: "Build, Inspect, and Use an MCP Server with Agent Framework",
+  duration: "125 min",
+  resource: "MCP Inspector + Agent Framework + shared Azure MCP",
+  why: "Build a small MCP server, inspect its capabilities, then connect an Agent Framework agent to the instructor's authenticated Azure server and verify its tool-backed answer.",
+  needsFoundry: true,
+  packages: `${mcpClient.packages} uvicorn==0.52.4`,
+  objectives: [...mcpServer.objectives, ...mcpClient.objectives],
+  concepts: [...mcpServer.concepts, ...mcpClient.concepts],
+  resources: [...mcpServer.resources, "Use the same configured model as earlier agent labs for Part B. Reuse the virtual environment and .env from Part A."],
+  documentationLinks: [...mcpServer.documentationLinks, { label: "Agent Framework MCP tools", url: "https://learn.microsoft.com/agent-framework/agents/tools/local-mcp-tools" }],
+  knowledge: {
+    concept: "The MCP server publishes capabilities; Inspector tests them directly; Agent Framework lets the model select and call the allowed tools.",
+    setup: "Reuse one environment, pass X-API-Key to the shared MCP endpoint, and configure model authentication separately from MCP authentication.",
+    outcome: "Local Inspector reports score 8/high; the shared server and agent report score 100/high for CHG-1003 because these are different teaching datasets.",
+  },
+});
+labs.splice(labs.indexOf(mcpClient), 1);
+const teachingOrder = ["00", "03", "04", "13", "06", "07", "08", "09", "10", "11", "22", "12", "20", "21", "14", "15", "16", "17", "18", "19", "23", "24", "25", "26"];
 
 const foundryExercises = [
   {
@@ -685,7 +707,7 @@ function page(lab, sources) {
 <body data-lab-id="${lab.id}">
 <main class="exercise">
   <header class="lab-header"><a class="back-link" href="index.html">← Course lab index</a><h1>Lab ${displayId(lab)}: ${escapeHtml(lab.title)}</h1><p class="lab-header-desc">${escapeHtml(lab.why)}</p><div class="lab-header-meta"><span class="lab-meta-pill">Level ${lab.level}</span><span class="lab-meta-pill">${lab.duration}</span><span class="lab-meta-pill">${escapeHtml(agentFrameworkPhase(lab.phase))}</span><span class="lab-meta-pill">${escapeHtml(lab.resource)}</span></div></header>
-  <nav class="page-nav" aria-label="Lab sections"><a href="#details">Details</a><a href="#readiness">Setup</a><a href="#resources">Resources</a><a href="#build">Build</a><a href="#run">Validate</a><a href="#knowledge-check">Knowledge check</a></nav>
+  <nav class="page-nav" aria-label="Lab sections"><a href="#details">Details</a><a href="#readiness">Setup</a><a href="#resources">Resources</a>${lab.id === "13" ? '<a href="#server-part">Part A: Server</a><a href="#client-part">Part B: Agent client</a>' : '<a href="#build">Build</a><a href="#run">Validate</a>'}<a href="#knowledge-check">Knowledge check</a></nav>
   <h2 id="details">Lab details</h2>
   <table><thead><tr><th>Level</th><th>Persona</th><th>Duration</th><th>Primary resource</th></tr></thead><tbody><tr><td>${lab.level}</td><td>Python developer / solution architect</td><td>${lab.duration}</td><td>${escapeHtml(lab.resource)}</td></tr></tbody></table>
   <h2>Why this matters</h2><p>${escapeHtml(lab.why)}</p>
@@ -693,14 +715,24 @@ function page(lab, sources) {
   <h2>Core concepts</h2><table><thead><tr><th>Concept</th><th>What it means in this lab</th></tr></thead><tbody>${conceptRows}</tbody></table>
   ${commonSetup(lab)}
   ${renderResources(lab)}
-  ${renderFiles(lab, sources)}
-  ${renderRun(lab)}
+  ${lab.id === "13" ? renderMcpParts() : renderFiles(lab, sources) + renderRun(lab)}
   ${renderKnowledge(lab)}
   <h2>Summary of learning</h2><ul>${lab.objectives.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
   ${renderSources(lab)}
   <div class="completion"><label><input type="checkbox" data-lab-complete="${lab.id}"> Mark Lab ${displayId(lab)} complete</label></div>
   <nav class="lab-pager">${previousLink}${next ? `<a href="${slugFile(next)}">Lab ${displayId(next)}: ${escapeHtml(next.title)} →</a>` : `<a href="index.html">Return to index →</a>`}</nav>
 </main><script src="assets/lab.js"></script></body></html>`;
+}
+
+function renderMcpParts() {
+  const partB = (renderFiles(mcpClient, readSources(mcpClient)) + renderRun(mcpClient))
+    .replaceAll('id="build"', 'id="client-build"').replaceAll('id="run"', 'id="client-run"');
+  return `<h2 id="server-part">Part A — Build and inspect the MCP server</h2>
+    ${renderFiles(mcpServerPart, readSources(mcpServerPart))}${renderRun(mcpServerPart)}
+    <h2 id="client-part">Part B — Use the authenticated server from Agent Framework</h2>
+    <p>Continue in the same activated environment and repository root. Keep the same .env; do not copy the template again. Use the shared HTTPS endpoint and X-API-Key tested in Part A.</p>
+    <section class="notice"><strong>Compare the right datasets.</strong> The local teaching server returns score 8/high for CHG-1003. The shared Azure server returns score 100/high. Part B uses the shared server; compare its answer with the remote Inspector result, not the local score.</section>
+    ${partB}`;
 }
 
 function indexPage() {
@@ -710,7 +742,7 @@ function indexPage() {
     const phaseLabs = teachingOrder.map((id) => labs.find((lab) => lab.id === id)).filter((lab) => lab.phase === phase);
     return `<section class="phase"><h2>${escapeHtml(agentFrameworkPhase(phase))}</h2><div class="lab-grid">${phaseLabs.map((lab) => `<article class="lab-card"><div class="card-top"><span class="lab-number">${displayId(lab)}</span><label class="index-check"><input type="checkbox" data-lab-complete="${lab.id}"> Complete</label></div><h3><a href="${slugFile(lab)}">${escapeHtml(lab.title)}</a></h3><p>${escapeHtml(lab.why)}</p><div class="card-meta"><span>Level ${lab.level}</span><span>${lab.duration}</span><span>${escapeHtml(lab.resource)}</span></div><a class="start-button" href="${slugFile(lab)}">Open lab →</a></article>`).join("")}</div></section>`;
   }).join("");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Microsoft Foundry and Agent Framework course labs</title><link rel="stylesheet" href="assets/lab.css"></head><body><main class="index-shell"><header class="course-header"><p class="eyebrow">Hands-on Microsoft AI course</p><h1>Microsoft Foundry and Agent Framework: From Foundations to Production-Ready Agentic Systems</h1><p>${totalLabCount} labs in one learning path: ${foundryExercises.length} official Microsoft Foundry exercises followed by ${labs.length} documentation-aligned Microsoft Agent Framework labs.</p><div class="progress-panel"><div><strong id="progress-count">0 of ${totalLabCount} labs complete</strong><span>Progress is stored only in this browser.</span></div><div class="progress-track"><div id="progress-bar"></div></div></div></header><section class="index-readiness"><h2>Before Lab 01</h2><ol><li>Install Python, Azure CLI, Node.js, Git, and VS Code.</li><li>Use an Azure subscription in which you can create Foundry resources and deploy models.</li><li>For Labs 01–06, follow the linked official Microsoft exercise and its stated prerequisites.</li><li>Before Lab 07, clone or extract this repository and obtain the Foundry project endpoint, deployed model name, and required Azure roles from the instructor.</li></ol><p><a href="../README.md">Project README</a> · <a href="../LAB_GUIDE.md">Instructor lab guide</a> · <a href="../.env.example">Environment template</a> · <a href="../requirements.txt">Pinned requirements</a></p></section><section class="phase foundry-phase"><h2>Microsoft Foundry foundations · Labs 01–06</h2><p class="phase-intro">These links open the current Microsoft-hosted exercises in a new tab. Complete them in order, then return here to begin Microsoft Agent Framework at Lab 07.</p><div class="lab-grid">${foundryCards}</div></section><section class="notice transition"><strong>Transition to Agent Framework:</strong> You have now created a Foundry project, explored and evaluated models, built model applications with the Responses API and tools, reviewed content safety, and created an agent through the portal and VS Code. The remaining labs use those foundations to build agents in Python with Microsoft Agent Framework.</section>${sections}<footer>Labs 01–06 link directly to Microsoft-hosted exercise instructions. The Agent Framework workbook is independently authored training material with references to Microsoft Learn documentation and official samples.</footer></main><script src="assets/lab.js"></script></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Microsoft Foundry and Agent Framework course labs</title><link rel="stylesheet" href="assets/lab.css"></head><body><main class="index-shell"><header class="course-header"><p class="eyebrow">Hands-on Microsoft AI course</p><h1>Microsoft Foundry and Agent Framework: From Foundations to Production-Ready Agentic Systems</h1><p>${totalLabCount} labs in one learning path: ${foundryExercises.length} official Microsoft Foundry exercises followed by ${labs.length} documentation-aligned Microsoft Agent Framework labs.</p><div class="progress-panel"><div><strong id="progress-count">0 of ${totalLabCount} labs complete</strong><span>Progress is stored only in this browser.</span></div><div class="progress-track"><div id="progress-bar"></div></div></div></header><section class="index-readiness"><h2>Before Lab 01</h2><ol><li>Install Python, Azure CLI, Node.js, Git, and VS Code.</li><li>Use an Azure subscription in which you can create Foundry resources and deploy models.</li><li>For Labs 01–06, follow the linked official Microsoft exercise and its stated prerequisites.</li><li>Before Lab 07, clone or extract this repository and obtain the Foundry project endpoint, deployed model name, and required Azure roles from the instructor.</li></ol><p><a href="../README.md">Project README</a> · <a href="../.env.example">Environment template</a> · <a href="../requirements.txt">Pinned requirements</a></p></section><section class="phase foundry-phase"><h2>Microsoft Foundry foundations · Labs 01–06</h2><p class="phase-intro">These links open the current Microsoft-hosted exercises in a new tab. Complete them in order, then return here to begin Microsoft Agent Framework at Lab 07.</p><div class="lab-grid">${foundryCards}</div></section><section class="notice transition"><strong>Transition to Agent Framework:</strong> You have now created a Foundry project, explored and evaluated models, built model applications with the Responses API and tools, reviewed content safety, and created an agent through the portal and VS Code. The remaining labs use those foundations to build agents in Python with Microsoft Agent Framework.</section>${sections}<footer>Labs 01–06 link directly to Microsoft-hosted exercise instructions. The Agent Framework workbook is independently authored training material with references to Microsoft Learn documentation and official samples.</footer></main><script src="assets/lab.js"></script></body></html>`;
 }
 
 const css = `
@@ -735,7 +767,7 @@ updateProgress();
 
 function validateGenerated() {
   const htmlFiles = fs.readdirSync(OUT).filter((name) => name.endsWith(".html"));
-  if (htmlFiles.length !== labs.length + 1) throw new Error(`Expected ${labs.length + 1} HTML files, found ${htmlFiles.length}`);
+  if (htmlFiles.length !== labs.length + 2) throw new Error(`Expected ${labs.length + 2} HTML files including the legacy MCP link, found ${htmlFiles.length}`);
   for (const lab of labs) {
     const file = path.join(OUT, slugFile(lab));
     const content = fs.readFileSync(file, "utf8");
@@ -751,11 +783,11 @@ function validateGenerated() {
   for (const exercise of foundryExercises) {
     if (!indexContent.includes(exercise.url)) throw new Error(`Index missing Foundry exercise: ${exercise.title}`);
   }
-  if (!indexContent.includes("0 of 31 labs complete") || !indexContent.includes("Lab 07")) throw new Error("Index numbering does not reflect the Foundry-first sequence");
+  if (!indexContent.includes(`0 of ${totalLabCount} labs complete`) || !indexContent.includes("Lab 07")) throw new Error("Index numbering does not reflect the Foundry-first sequence");
 }
 
 fs.mkdirSync(ASSETS, { recursive: true });
-const currentLabFiles = new Set(labs.map((lab) => slugFile(lab)));
+const currentLabFiles = new Set([...labs.map((lab) => slugFile(lab)), "27-mcp-agent-client.html"]);
 for (const name of fs.readdirSync(OUT)) {
   if (/^\d{2}-.*\.html$/.test(name) && !currentLabFiles.has(name)) {
     fs.rmSync(path.join(OUT, name));
@@ -763,9 +795,29 @@ for (const name of fs.readdirSync(OUT)) {
 }
 fs.writeFileSync(path.join(ASSETS, "lab.css"), css.trimStart(), "utf8");
 fs.writeFileSync(path.join(ASSETS, "lab.js"), js.trimStart(), "utf8");
-for (const lab of labs) {
-  fs.writeFileSync(path.join(OUT, slugFile(lab)), cleanGeneratedHtml(page(lab, readSources(lab))), "utf8");
+// A focused merge preserves hand-edited content in other published labs.
+const mergeOnly = process.argv.includes("--merge-mcp");
+const oldNumbers = new Map();
+if (mergeOnly) {
+  for (const lab of labs) {
+    const content = fs.readFileSync(path.join(OUT, slugFile(lab)), "utf8");
+    const old = content.match(/<title>Lab (\d+)/)?.[1];
+    if (old) oldNumbers.set(old, displayId(lab));
+  }
 }
+for (const lab of labs) {
+  const file = path.join(OUT, slugFile(lab));
+  let content;
+  if (mergeOnly && lab.id !== "13") {
+    content = fs.readFileSync(file, "utf8").replace(/Lab (\d{2})\b/g, (match, n) => `Lab ${oldNumbers.get(n) || n}`);
+    const generated = page(lab, []);
+    content = content.replace(/<nav class="lab-pager">[\s\S]*?<\/nav>/, generated.match(/<nav class="lab-pager">[\s\S]*?<\/nav>/)[0]);
+  } else {
+    content = cleanGeneratedHtml(page(lab, readSources(lab)));
+  }
+  fs.writeFileSync(file, content, "utf8");
+}
+fs.writeFileSync(path.join(OUT, "27-mcp-agent-client.html"), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=13-mcp.html#client-part"><title>MCP client exercise moved to Lab 10</title></head><body><p>This exercise is now Part B of Lab 10. <a href="13-mcp.html#client-part">Open the combined MCP lab</a>.</p></body></html>`, "utf8");
 fs.writeFileSync(path.join(OUT, "index.html"), cleanGeneratedHtml(indexPage()), "utf8");
 validateGenerated();
 console.log(`Generated ${labs.length} labs plus index.html in ${OUT}`);
