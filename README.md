@@ -1,6 +1,6 @@
 # Microsoft Foundry and Agent Framework course labs
 
-Independent, classroom-sized Python demos based on the current Microsoft Learn documentation and the official Microsoft Agent Framework Python samples. Every demo uses `FoundryChatClient` with a Microsoft Foundry project endpoint and classroom authentication through `AzureCliCredential()`.
+Independent, classroom-sized Python demos based on the current Microsoft Learn documentation and the official Microsoft Agent Framework Python samples. Standard model-inference demos use `OpenAIChatClient` with an Azure OpenAI v1 endpoint and a classroom API key stored only in `.env`. Identity-dependent Foundry labs retain Microsoft Entra authentication where the platform requires it.
 
 ## Participant HTML labs
 
@@ -34,20 +34,15 @@ Or run it without activation:
 .\venv\Scripts\python.exe --version
 ```
 
-## 2. Authenticate and configure
-
-Sign in with the classroom identity:
-
-```powershell
-az login
-```
+## 2. Configure classroom model access
 
 Copy `.env.example` to `.env`, then set:
 
-- `FOUNDRY_PROJECT_ENDPOINT`: the project endpoint from the Foundry portal.
-- `FOUNDRY_MODEL`: the deployed chat model name.
+- `AZURE_OPENAI_ENDPOINT`: the full Azure OpenAI endpoint ending in `/openai/v1`.
+- `AZURE_OPENAI_API_KEY`: the instructor-provided classroom resource key.
+- `AZURE_OPENAI_DEPLOYMENT`: the deployed model name.
 
-Do not commit `.env`. Production applications should replace `AzureCliCredential` with a managed identity or another specific workload credential.
+Do not commit `.env`. Labs covering managed Prompt Agents, Hosted Agents, Agent Optimizer, browser automation, or identity-aware RAG explicitly retain `az login` because those operations require a Microsoft Entra identity.
 
 ## 3. Install dependencies
 
@@ -101,7 +96,7 @@ See [LAB_GUIDE.md](LAB_GUIDE.md) for the classroom story and five-minute challen
 
 ## Verification boundary
 
-All Python files are compiled and imported locally during validation. A live model call still requires your Foundry project, deployed model, RBAC access, and an active `az login` session. The RAG demo additionally requires a populated Azure AI Search index; the MCP demo requires outbound access to its configured MCP endpoint.
+All Python files are compiled and imported locally during validation. A standard live model call requires the configured Azure OpenAI endpoint, deployment, and API key. The RAG demo additionally requires a populated Azure AI Search index and Search key; the MCP demo requires outbound access to its configured MCP endpoint. Identity-dependent Foundry operations still require Entra sign-in and RBAC.
 
 The local evaluation decorators and functional workflow API emit Microsoft's current `ExperimentalWarning`. They are included because they are in the latest official documentation, but their APIs may change in later releases.
 

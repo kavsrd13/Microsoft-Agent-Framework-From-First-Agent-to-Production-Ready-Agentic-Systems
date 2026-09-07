@@ -11,17 +11,17 @@
   <h2>Learning objectives</h2><ul><li>Configure OpenTelemetry providers</li><li>Create and read an agent trace</li><li>Generate a self-contained HTML metrics dashboard from real run telemetry</li></ul>
   <h2>Core concepts</h2><table><thead><tr><th>Concept</th><th>What it means in this lab</th></tr></thead><tbody><tr><td><strong>Trace</strong></td><td>Connects spans from one end-to-end operation.</td></tr><tr><td><strong>Span</strong></td><td>Measures one operation such as a model or tool call.</td></tr><tr><td><strong>Operational metrics</strong></td><td>Summarize success, latency, tokens, and span counts.</td></tr></tbody></table>
 
+
     <h2 id="readiness">Start here: end-to-end readiness</h2>
     <section class="notice"><strong>Use the project root.</strong> Run every command from <code>microsoft-agent-framework-demos</code> unless the lab explicitly changes folders. Commands use PowerShell on Windows.</section>
     <h3>Step 1 — Verify prerequisites</h3>
     <ul class="checklist">
       <li><label><input type="checkbox" data-progress="10-python"> Python 3.12 is installed.</label></li>
-      <li><label><input type="checkbox" data-progress="10-cli"> Azure CLI is installed.</label></li>
+
       <li><label><input type="checkbox" data-progress="10-editor"> VS Code or another Python editor is available.</label></li>
       <li><label><input type="checkbox" data-progress="10-access"> Required Azure access described below is available.</label></li>
     </ul>
-    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python --version
-az --version</code></pre></div>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python --version</code></pre></div>
     <h3>Step 2 — Create and activate the virtual environment</h3>
     <p>Create one course environment in the repository root. Reuse it for later labs.</p>
     <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m venv venv
@@ -34,29 +34,28 @@ az --version</code></pre></div>
     <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 python -m pip check</code></pre></div>
-    <details><summary>Running only this lab outside the course repository</summary><p>Install these direct packages:</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install agent-framework-core==1.15.0 agent-framework-foundry==1.11.0 azure-identity==1.25.3 python-dotenv==1.2.3 opentelemetry-sdk==1.43.0</code></pre></div></details>
+    <details><summary>Running only this lab outside the course repository</summary><p>Install these direct packages:</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install agent-framework-core==1.15.0 agent-framework-openai==1.14.1 python-dotenv==1.2.3 opentelemetry-sdk==1.43.0</code></pre></div></details>
     <h3>Step 4 — Create the environment file</h3>
     <p>Create <code>.env</code> once from the safe template, then replace placeholders. Never commit <code>.env</code>.</p>
     <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>Copy-Item .env.example .env
 notepad .env</code></pre></div>
-    <div class="code-shell"><div class="code-head"><span>Environment</span><button class="copy-button" type="button">Copy</button></div><pre><code>FOUNDRY_PROJECT_ENDPOINT=https://&lt;foundry-resource&gt;.services.ai.azure.com/api/projects/&lt;project&gt;
-FOUNDRY_MODEL=&lt;deployed-model-name&gt;
+    <div class="code-shell"><div class="code-head"><span>Environment</span><button class="copy-button" type="button">Copy</button></div><pre><code>AZURE_OPENAI_ENDPOINT=https://&lt;foundry-resource&gt;.openai.azure.com/openai/v1
+AZURE_OPENAI_API_KEY=&lt;instructor-provided-resource-key&gt;
+AZURE_OPENAI_DEPLOYMENT=&lt;deployed-model-name&gt;
 ENABLE_CONSOLE_EXPORTERS=true
 ENABLE_SENSITIVE_DATA=false
 OTEL_SERVICE_NAME=agent-framework-course-demos</code></pre></div>
-    <h3>Step 5 — Authenticate for classroom development</h3><p>Sign in with the identity that has access to the Foundry project and any additional Azure resources.</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>az login
-az account show --query &quot;{subscription:name, tenant:tenantId}&quot; -o table</code></pre></div>
 
-  <h2 id="resources">Create or verify required resources</h2><ol><li>In Microsoft Foundry, create or select a project, deploy the instructor-approved chat model, and copy its project endpoint and deployment name into <code>.env</code>.</li><li>Grant the learner the project-level role required to invoke the deployment. For a shared class, provision this before the lab.</li><li>No monitoring service is required; the first demo exports to the console and the second keeps spans in memory.</li><li>Use the supplied dashboard_template.html rather than a CDN so the result works offline.</li></ol><section class="warning"><strong>Cost and cleanup:</strong> Azure Search, models, hosted agents, storage, browser workspaces, and optimization jobs can incur charges. Use instructor-provided resources where possible and follow your organization's cleanup policy after class.</section>
+
+  <h2 id="resources">Create or verify required resources</h2><ol><li>Obtain the instructor-provided Azure OpenAI <code>/openai/v1</code> endpoint, resource key, and deployment name. Store them only in the git-ignored <code>.env</code>.</li><li>The shared key is for classroom model inference only. Never commit, print, screenshot, or submit it.</li><li>No monitoring service is required; the first demo exports to the console and the second keeps spans in memory.</li><li>Use the supplied dashboard_template.html rather than a CDN so the result works offline.</li></ol><section class="warning"><strong>Cost and cleanup:</strong> Azure Search, models, hosted agents, storage, browser workspaces, and optimization jobs can incur charges. Use instructor-provided resources where possible and follow your organization's cleanup policy after class.</section>
   <h2 id="build">Build the lab in modules</h2><section class="file-build"><h3>Use case 1 — Console trace</h3><p>Create one correlated trace around an agent and tool call.</p><div class="file-target"><strong>Create:</strong> <code>10_observability/student_observability.py</code></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">1</div><div class="step-body"><h4>Import the required libraries</h4><p>Add only the SDK types used by this part of the lab.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import asyncio
 import os
 import sys
 from typing import Annotated
 
 from agent_framework import Agent, tool
-from agent_framework.foundry import FoundryChatClient
+from agent_framework.openai import OpenAIChatClient
 from agent_framework.observability import configure_otel_providers, get_tracer
-from azure.identity import AzureCliCredential
 from dotenv import load_dotenv
 from opentelemetry.trace import SpanKind
 from opentelemetry.trace.span import format_trace_id
@@ -75,10 +74,10 @@ def check_service_health(service: Annotated[str, &quot;Service name&quot;]) -&gt
     configure_otel_providers(enable_console_exporters=True)
 
     agent = Agent(
-        client=FoundryChatClient(
-            project_endpoint=os.environ[&quot;FOUNDRY_PROJECT_ENDPOINT&quot;],
-            model=os.environ[&quot;FOUNDRY_MODEL&quot;],
-            credential=AzureCliCredential(),
+        client=OpenAIChatClient(
+            base_url=os.environ[&quot;AZURE_OPENAI_ENDPOINT&quot;],
+            api_key=os.environ[&quot;AZURE_OPENAI_API_KEY&quot;],
+            model=os.environ[&quot;AZURE_OPENAI_DEPLOYMENT&quot;],
         ),
         name=&quot;ObservedAgent&quot;,
         instructions=&quot;Use check_service_health for status questions. Keep answers brief.&quot;,
@@ -104,9 +103,8 @@ from pathlib import Path
 from typing import Annotated
 
 from agent_framework import Agent, tool
-from agent_framework.foundry import FoundryChatClient
+from agent_framework.openai import OpenAIChatClient
 from agent_framework.observability import configure_otel_providers, get_tracer
-from azure.identity import AzureCliCredential
 from dotenv import load_dotenv
 from opentelemetry import trace
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
@@ -116,12 +114,10 @@ from opentelemetry.trace.span import format_span_id, format_trace_id
 load_dotenv()
 
 
-@tool(approval_mode=&quot;never_require&quot;)</code></pre></div></div></article><article class="step-card"><div class="step-number">4</div><div class="step-body"><h4>Define the application capability</h4><p>Create the typed tool or helper that supplies trusted application behavior.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>def check_service_health(service: Annotated[str, &quot;Service name&quot;]) -&gt; str:
+@tool(approval_mode=&quot;never_require&quot;)
+def check_service_health(service: Annotated[str, &quot;Service name&quot;]) -&gt; str:
     &quot;&quot;&quot;Return the classroom status of a service.&quot;&quot;&quot;
-    return f&quot;{service} is operational. No active incidents.&quot;
-
-
-def token_count(usage: dict, name: str) -&gt; int:
+    return f&quot;{service} is operational. No active incidents.&quot;</code></pre></div></div></article><article class="step-card"><div class="step-number">4</div><div class="step-body"><h4>Add implementation module 4</h4><p>Paste this block after the previous module and review how it advances the scenario.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>def token_count(usage: dict, name: str) -&gt; int:
     value = usage.get(name, 0)
     return value if isinstance(value, int) else 0
 
@@ -134,10 +130,10 @@ async def main() -&gt; None:
         enable_console_exporters=False,
         exporters=[span_exporter],
     )</code></pre></div></div></article><article class="step-card"><div class="step-number">5</div><div class="step-body"><h4>Load configuration</h4><p>Read endpoints, model names, and non-secret settings from the project environment.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    agent = Agent(
-        client=FoundryChatClient(
-            project_endpoint=os.environ[&quot;FOUNDRY_PROJECT_ENDPOINT&quot;],
-            model=os.environ[&quot;FOUNDRY_MODEL&quot;],
-            credential=AzureCliCredential(),
+        client=OpenAIChatClient(
+            base_url=os.environ[&quot;AZURE_OPENAI_ENDPOINT&quot;],
+            api_key=os.environ[&quot;AZURE_OPENAI_API_KEY&quot;],
+            model=os.environ[&quot;AZURE_OPENAI_DEPLOYMENT&quot;],
         ),
         name=&quot;OperationsAgent&quot;,
         instructions=(
@@ -221,8 +217,7 @@ async def main() -&gt; None:
 
 
 if __name__ == &quot;__main__&quot;:
-    asyncio.run(main())</code></pre></div></div></article></section><h3>Supplied supporting files</h3><p>These files are already part of the repository. Inspect or reuse them rather than retyping them.</p><ul><li><a href="../10_observability/dashboard_template.html" target="_blank"><code>10_observability/dashboard_template.html</code></a></li><li><a href="../10_observability/agent_metrics_dashboard.html" target="_blank"><code>10_observability/agent_metrics_dashboard.html</code></a></li></ul>
-  <h2 id="run">Run and validate</h2><h3>Run the completed files</h3><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python .\10_observability\student_observability.py
+    asyncio.run(main())</code></pre></div></div></article></section><h3>Supplied supporting files</h3><p>These files are already part of the repository. Inspect or reuse them rather than retyping them.</p><ul><li><a href="../10_observability/dashboard_template.html" target="_blank"><code>10_observability/dashboard_template.html</code></a></li><li><a href="../10_observability/agent_metrics_dashboard.html" target="_blank"><code>10_observability/agent_metrics_dashboard.html</code></a></li></ul><h2 id="run">Run and validate</h2><h3>Run the completed files</h3><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python .\10_observability\student_observability.py
 python .\10_observability\student_dashboard_demo.py
 start .\10_observability\agent_metrics_dashboard.html</code></pre></div><h3>Expected result</h3><ul><li>The console demo prints a trace ID and OpenTelemetry spans.</li><li>The dashboard shows run count, success rate, average latency, token usage, and longest spans.</li></ul><section class="checkpoint"><strong>Completion checkpoint:</strong> Do not mark the lab complete until the observed output matches these conditions.</section><h3>Five-minute challenge</h3><p>Use the dashboard to identify the slowest scenario and the scenario with the highest total token count.</p>
   <h2 id="knowledge-check">Knowledge check</h2><div class="knowledge-list"><section class="question" data-answer="2"><div class="question-number">1</div><div class="question-body"><h3>Which statement best describes the central concept in Lab 16?</h3><label class="option"><input type="radio" name="10-q0" value="0"><span>It stores provider credentials directly in Python source.</span></label><label class="option"><input type="radio" name="10-q0" value="1"><span>It automatically deploys every Azure resource without configuration.</span></label><label class="option"><input type="radio" name="10-q0" value="2"><span>OpenTelemetry correlates agent, model, and tool operations through traces and spans.</span></label><label class="option"><input type="radio" name="10-q0" value="3"><span>It removes the need for model authentication and authorization.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="2"><div class="question-number">2</div><div class="question-body"><h3>Which setup choice matches this lab?</h3><label class="option"><input type="radio" name="10-q1" value="0"><span>Skip role assignments because successful sign-in grants every permission.</span></label><label class="option"><input type="radio" name="10-q1" value="1"><span>Use real customer data before validating the classroom scenario.</span></label><label class="option"><input type="radio" name="10-q1" value="2"><span>Keep sensitive prompt and response capture disabled for this classroom dashboard.</span></label><label class="option"><input type="radio" name="10-q1" value="3"><span>Hard-code every credential so the code is self-contained.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="2"><div class="question-number">3</div><div class="question-body"><h3>What evidence proves that the lab worked?</h3><label class="option"><input type="radio" name="10-q2" value="0"><span>The script compiled, but its output was not inspected.</span></label><label class="option"><input type="radio" name="10-q2" value="1"><span>The model returned any fluent answer, regardless of the expected behavior.</span></label><label class="option"><input type="radio" name="10-q2" value="2"><span>The generated dashboard is based on measured runs and exported spans, not fabricated metrics.</span></label><label class="option"><input type="radio" name="10-q2" value="3"><span>The Python file exists, even if it was not run.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section></div>

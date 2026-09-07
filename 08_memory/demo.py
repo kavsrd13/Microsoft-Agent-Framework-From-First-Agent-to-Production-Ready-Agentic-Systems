@@ -3,8 +3,7 @@ import os
 from pathlib import Path
 
 from agent_framework import Agent, FileMemoryProvider, FileSystemAgentFileStore
-from agent_framework.foundry import FoundryChatClient
-from azure.identity import AzureCliCredential
+from agent_framework.openai import OpenAIChatClient
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,10 +12,10 @@ USER_ID = "classroom-user-1"
 
 
 async def main() -> None:
-    client = FoundryChatClient(
-        project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-        model=os.environ["FOUNDRY_MODEL"],
-        credential=AzureCliCredential(),
+    client = OpenAIChatClient(
+        base_url=os.environ["AZURE_OPENAI_ENDPOINT"],
+        api_key=os.environ["AZURE_OPENAI_API_KEY"],
+        model=os.environ["AZURE_OPENAI_DEPLOYMENT"],
     )
 
     memory_root = Path(__file__).parent / "agent-file-memory"
@@ -55,4 +54,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

@@ -8,9 +8,8 @@ from pathlib import Path
 from typing import Annotated
 
 from agent_framework import Agent, tool
-from agent_framework.foundry import FoundryChatClient
+from agent_framework.openai import OpenAIChatClient
 from agent_framework.observability import configure_otel_providers, get_tracer
-from azure.identity import AzureCliCredential
 from dotenv import load_dotenv
 from opentelemetry import trace
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
@@ -41,10 +40,10 @@ async def main() -> None:
     )
 
     agent = Agent(
-        client=FoundryChatClient(
-            project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-            model=os.environ["FOUNDRY_MODEL"],
-            credential=AzureCliCredential(),
+        client=OpenAIChatClient(
+            base_url=os.environ["AZURE_OPENAI_ENDPOINT"],
+            api_key=os.environ["AZURE_OPENAI_API_KEY"],
+            model=os.environ["AZURE_OPENAI_DEPLOYMENT"],
         ),
         name="OperationsAgent",
         instructions=(

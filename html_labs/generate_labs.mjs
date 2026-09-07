@@ -6,31 +6,31 @@ const OUT = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(OUT, "..");
 const ASSETS = path.join(OUT, "assets");
 
-const CORE = "agent-framework-core==1.15.0 agent-framework-foundry==1.11.0 azure-identity==1.25.3 python-dotenv==1.2.3";
+const CORE = "agent-framework-core==1.15.0 agent-framework-openai==1.14.1 python-dotenv==1.2.3";
 const PYDANTIC = `${CORE} pydantic==2.13.5`;
 const ORCHESTRATIONS = `${CORE} agent-framework-orchestrations==1.1.1`;
-const SEARCH = `${CORE} agent-framework-azure-ai-search==1.0.0b260813 azure-search-documents==12.1.0b1`;
-const HOSTING = `${CORE} agent-framework-foundry-hosting==1.0.0b260827`;
+const SEARCH = `${CORE} agent-framework-azure-ai-search==1.0.0b260813 azure-search-documents==12.1.0b1 azure-identity==1.25.3`;
+const HOSTING = `${CORE} agent-framework-foundry==1.11.0 agent-framework-foundry-hosting==1.0.0b260827 azure-identity==1.25.3`;
 
 const labs = [
   {
     id: "00", slug: "first-agent", folder: "00_client", title: "Create, Run, and Stream Your First Agent",
     phase: "Phase 1 · Clients and agent responses", level: "100", duration: "110 min", resource: "Foundry + optional Gemini",
     why: "This combined introduction follows one complete learning path: understand the model client, create an Agent, run it for a complete response, stream a second response, and finally compare the same Agent abstraction with an optional Gemini client.",
-    objectives: ["Configure FoundryChatClient with AzureCliCredential", "Create an Agent with a name and instructions", "Run the agent and inspect the complete AgentResponse", "Stream incremental response updates", "Compare Foundry and Gemini client configuration without changing the Agent programming model"],
-    concepts: [["Chat client", "Connects Agent Framework to a model provider."], ["AzureCliCredential", "Uses the identity established by az login for classroom access."], ["Agent", "Combines a client, instructions, tools, context, and a run interface."], ["AgentResponse", "Contains the completed model response and related metadata."], ["Streaming", "Returns incremental response updates through async iteration."], ["Provider portability", "The Agent interface stays consistent when the model provider changes."]],
+    objectives: ["Configure OpenAIChatClient with an Azure OpenAI API key", "Create an Agent with a name and instructions", "Run the agent and inspect the complete AgentResponse", "Stream incremental response updates", "Compare Azure OpenAI and Gemini client configuration without changing the Agent programming model"],
+    concepts: [["Chat client", "Connects Agent Framework to a model provider."], ["API-key authentication", "Uses the classroom Azure OpenAI resource key stored only in .env."], ["Agent", "Combines a client, instructions, tools, context, and a run interface."], ["AgentResponse", "Contains the completed model response and related metadata."], ["Streaming", "Returns incremental response updates through async iteration."], ["Provider portability", "The Agent interface stays consistent when the model provider changes."]],
     packages: `${CORE} agent-framework-gemini==1.0.0b260813`, needsFoundry: true,
     env: ["GEMINI_API_KEY=<your Google AI Studio key>", "GEMINI_MODEL=gemini-3.6-flash"],
-    resources: ["Use an instructor-provided Foundry project and model deployment, or create them in Microsoft Foundry.", "Confirm that the signed-in Azure CLI identity can invoke the Foundry model deployment.", "For the optional Gemini comparison, create a Google AI Studio API key and place it only in the git-ignored .env file."],
+    resources: ["Use the instructor-provided Azure OpenAI v1 endpoint, resource key, and deployment name.", "Keep the shared classroom key only in the git-ignored .env file and never paste it into Python or lab submissions.", "For the optional Gemini comparison, create a Google AI Studio API key and place it only in the git-ignored .env file."],
     files: [
-      { source: "01_agent_creation/demo.py", target: "01_agent_creation/student_first_agent.py", label: "Part 1 — Create and run the first Foundry agent", purpose: "Make the Foundry client, classroom authentication, Agent instructions, run call, and completed response visible in one small program." },
-      { source: "02_streaming/demo.py", target: "02_streaming/student_streaming_agent.py", label: "Part 2 — Stream the Foundry agent response", purpose: "Reuse the same client and Agent concepts while consuming response updates as they arrive." },
+      { source: "01_agent_creation/demo.py", target: "01_agent_creation/student_first_agent.py", label: "Part 1 — Create and run the first Azure OpenAI-backed agent", purpose: "Make the API-key client, Agent instructions, run call, and completed response visible in one small program." },
+      { source: "02_streaming/demo.py", target: "02_streaming/student_streaming_agent.py", label: "Part 2 — Stream the Azure OpenAI response", purpose: "Reuse the same client and Agent concepts while consuming response updates as they arrive." },
       { source: "00_client/gemini_demo.py", target: "00_client/student_gemini_agent.py", label: "Part 3 — Compare an optional Gemini client", purpose: "Change the provider-specific client and authentication while preserving the Agent programming model." },
     ],
     run: ["python .\\01_agent_creation\\student_first_agent.py", "python .\\02_streaming\\student_streaming_agent.py", "# Optional provider comparison", "python .\\00_client\\student_gemini_agent.py"],
     expected: ["The first program prints the capital of France through a completed AgentResponse.", "The second program displays a one-sentence fact incrementally and finishes with one clean newline.", "If Gemini credentials are configured, the optional program returns a short definition through the same Agent abstraction.", "No credential value is printed or stored in a Python file."],
     challenge: "Give the non-streaming and streaming agents the same prompt and instructions, then compare only how the response is delivered.",
-    knowledge: { concept: "The model client is provider-specific, while Agent and its run patterns provide the common application abstraction.", setup: "Configure the Foundry endpoint and model, authenticate with az login, and keep the optional Gemini key only in .env.", outcome: "One lab successfully returns a complete Foundry response, streams another response, and optionally runs the same Agent shape with Gemini." },
+    knowledge: { concept: "The model client is provider-specific, while Agent and its run patterns provide the common application abstraction.", setup: "Configure the Azure OpenAI v1 endpoint, deployment, and API key in .env; keep the optional Gemini key there as well.", outcome: "One lab successfully returns a complete Azure OpenAI response, streams another response, and optionally runs the same Agent shape with Gemini." },
   },
   {
     id: "03", slug: "structured-output", folder: "03_structured_output", title: "Return Structured Output",
@@ -68,7 +68,7 @@ const labs = [
     why: "A session carries conversation history across turns, allowing the agent to answer follow-up questions with context from earlier messages.",
     objectives: ["Create an AgentSession", "Reuse it across two runs", "Contrast session memory with a new session"],
     concepts: [["AgentSession", "Carries conversation state across runs."], ["Multi-turn", "Later prompts can rely on earlier messages."], ["Session boundary", "A new session starts without the previous transcript."]],
-    packages: CORE, needsFoundry: true, resources: ["No additional Azure resource is required beyond the Foundry model."],
+    packages: CORE, needsFoundry: true, resources: ["No additional Azure resource is required beyond the Azure OpenAI model deployment."],
     files: [{ source: "06_sessions/demo.py", target: "06_sessions/student_lab.py", label: "Build a two-turn conversation", purpose: "Reuse one session for both prompts." }],
     run: ["python .\\06_sessions\\student_lab.py"],
     expected: ["The second answer mentions Alice and hiking.", "Both calls use the same session object."],
@@ -136,15 +136,16 @@ const labs = [
   {
     id: "11", slug: "evaluation", folder: "11_evaluation", title: "Evaluate Agent Quality",
     phase: "Phase 3 · Guardrails, telemetry, and quality", level: "300", duration: "55 min", resource: "Foundry",
-    why: "Repeatable evaluation turns subjective prompt tuning into evidence. Local evaluators are fast enough to use while developing and can later become release gates.",
-    objectives: ["Create a custom evaluator", "Combine built-in and custom checks", "Run an evaluation set and inspect scores"],
-    concepts: [["Evaluation case", "A repeatable input used to test expected behavior."], ["Evaluator", "Produces a score or pass/fail decision."], ["Release gate", "Blocks promotion when required checks fail."]],
-    packages: CORE, needsFoundry: true, resources: ["The model calls are live; the evaluators themselves run locally."],
-    files: [{ source: "11_evaluation/demo.py", target: "11_evaluation/student_lab.py", label: "Build a local evaluation set", purpose: "Evaluate two weather questions with one built-in and one custom rule." }],
-    run: ["python .\\11_evaluation\\student_lab.py"],
-    expected: ["Each provider reports passed/total checks.", "Individual PASS or FAIL evaluator names are printed."],
-    challenge: "Add one query that should fail the keyword check and explain why the failure is useful.",
-    knowledge: { concept: "Evaluation measures agent behavior against repeatable criteria rather than a single impressive response.", setup: "Define both the queries and the evaluators before reviewing results.", outcome: "The terminal shows named checks and their pass/fail results for every case." },
+    why: "Repeatable evaluation turns subjective prompt tuning into evidence. This lab combines tool-use, quality, prompt-injection, and basic red-team checks and then displays the measured results in a local dashboard.",
+    objectives: ["Define repeatable travel-policy evaluation cases", "Combine built-in and custom local evaluators", "Export structured results and inspect them in an HTML dashboard"],
+    concepts: [["Evaluation case", "A repeatable input with expected output and expected tool calls."], ["Evaluator", "Produces a score or pass/fail decision."], ["Adversarial check", "Tests prompt-injection and harmful-request behavior."], ["Dashboard", "Summarizes measured local results without exposing credentials."]],
+    packages: CORE, needsFoundry: true, resources: ["The Agent Framework model calls are live through the Azure OpenAI API key; the evaluation checks run locally.", "The supplied dashboard reads eval_results.json generated by the script."],
+    files: [{ source: "11_evaluation/demo.py", target: "11_evaluation/student_lab.py", label: "Build the local evaluation suite", purpose: "Evaluate travel-policy tool use, expected content, prompt-injection resistance, and a harmful request." }],
+    support: ["11_evaluation/eval_dashboard.html"],
+    run: ["python .\\11_evaluation\\student_lab.py", "start .\\11_evaluation\\eval_dashboard.html"],
+    expected: ["The terminal prints provider, pass count, and each named evaluator result.", "eval_results.json contains the measured cases and scores.", "The dashboard shows summary cards and per-query PASS/FAIL details."],
+    challenge: "Add one adversarial question and a corresponding evaluator rule, rerun the suite, and compare the pass rate.",
+    knowledge: { concept: "Evaluation measures agent behavior against repeatable criteria rather than a single impressive response.", setup: "Define queries, expected outputs, expected tool calls, and evaluators before reviewing results.", outcome: "The terminal and dashboard show named checks and pass/fail evidence for every case." },
   },
   {
     id: "12", slug: "classic-rag", folder: "12_rag_azure_ai_search", title: "Build RAG from Azure AI Search to Agent Framework",
@@ -154,7 +155,7 @@ const labs = [
     concepts: [["Knowledge mining", "Enriches source documents and creates searchable fields in an Azure AI Search index."], ["Retrieval", "Finds relevant indexed documents for a user question."], ["Context provider", "Injects retrieved passages before the model call."], ["Grounding rule", "Requires the answer to stay within retrieved evidence."]],
     packages: SEARCH, needsFoundry: true,
     env: ["AZURE_SEARCH_ENDPOINT=https://<search-service>.search.windows.net", "AZURE_SEARCH_INDEX_NAME=margies-index", "AZURE_SEARCH_API_KEY=<query-key-from-part-a>"],
-    resources: ["Complete Part A before starting the Agent Framework code.", "Reuse the Azure AI Search endpoint, query key, and margies-index created in Part A.", "Use a Foundry project and deployed chat model that the signed-in learner can invoke."],
+    resources: ["Complete Part A before starting the Agent Framework code.", "Reuse the Azure AI Search endpoint, query key, and margies-index created in Part A.", "Use the instructor-provided Azure OpenAI endpoint, API key, and deployed model."],
     officialExercise: {
       url: "https://go.microsoft.com/fwlink/?linkid=2320469",
       title: "Create a knowledge mining solution",
@@ -215,12 +216,12 @@ const labs = [
     concepts: [["MCPStreamableHTTPTool", "Owns the client connection to a remote Streamable HTTP server."], ["Header provider", "Adds the API-key header from .env without placing the secret in Python source."], ["Tool discovery", "Loads the allowed server tool schemas when the connection opens."], ["Allow-list", "Exposes only get_change_record and assess_change_risk to the model."], ["Prompt boundary", "Keeps MCP prompts available on the server but does not load them as model functions in this client."], ["Lifecycle", "Closes the MCP connection and agent cleanly with async context managers."]],
     packages: `${CORE} mcp==1.29.0`, needsFoundry: true,
     env: ["MCP_SERVER_NAME=Contoso Change Risk Advisor", "MCP_SERVER_URL=https://<instructor-provided-hostname>/mcp", "MCP_API_KEY=<instructor-provided-api-key>"],
-    resources: ["Complete the preceding MCP server lab and retain the instructor-provided endpoint and key in .env.", "Confirm that the classroom network can reach the Azure Container Apps hostname.", "Use the same Foundry project and deployed model as the earlier agent labs.", "Do not paste the MCP API key into the Python file, terminal history, screenshots, or lab submissions."],
-    files: [{ source: "27_mcp_agent_client/demo.py", target: "27_mcp_agent_client/student_lab.py", label: "Build the MCP-enabled change review agent", purpose: "Open the live MCP connection, create the Foundry-backed Agent, and ask a question that requires both server tools." }],
+    resources: ["Complete the preceding MCP server lab and retain the instructor-provided endpoint and key in .env.", "Confirm that the classroom network can reach the Azure Container Apps hostname.", "Use the same Azure OpenAI endpoint, key, and deployed model as the earlier agent labs.", "Do not paste either API key into the Python file, terminal history, screenshots, or lab submissions."],
+    files: [{ source: "27_mcp_agent_client/demo.py", target: "27_mcp_agent_client/student_lab.py", label: "Build the MCP-enabled change review agent", purpose: "Open the live MCP connection, create the Azure OpenAI-backed Agent, and ask a question that requires both server tools." }],
     run: ["python .\\27_mcp_agent_client\\student_lab.py"],
     expected: ["The agent identifies CHG-1003 as the Emergency payment gateway routing update.", "The response reports high risk and score 100 using live MCP tool output.", "The response notes that no rollback plan is recorded, and no production change is executed."],
     challenge: "Change the prompt to CHG-1001 and verify that the agent reports low risk and score 10 without inventing additional facts.",
-    knowledge: { concept: "MCPStreamableHTTPTool lets an Agent Framework agent discover and call a trusted remote MCP server.", setup: "Set MCP_SERVER_URL and MCP_API_KEY in .env, send X-API-Key through header_provider, and authenticate to Foundry with az login.", outcome: "The final answer contains the live server's CHG-1003 title, high risk level, and score 100." },
+    knowledge: { concept: "MCPStreamableHTTPTool lets an Agent Framework agent discover and call a trusted remote MCP server.", setup: "Set both the Azure OpenAI and MCP endpoint/key values in .env; send the MCP key through header_provider.", outcome: "The final answer contains the live server's CHG-1003 title, high risk level, and score 100." },
   },
   {
     id: "14", slug: "workflow-basics", folder: "14_workflow_basics", title: "Build a Functional Workflow",
@@ -259,7 +260,7 @@ const labs = [
     run: ["python .\\16_multi_agent_sequential\\student_lab.py"],
     expected: ["The writer responds before the reviewer.", "The printed transcript includes both participant names."],
     challenge: "Make the reviewer require a measurable rule such as fewer than 12 words.",
-    knowledge: { concept: "Sequential orchestration passes work through participants in a defined order.", setup: "Install agent-framework-orchestrations and use the same configured Foundry client for both agents.", outcome: "The transcript shows writer output followed by reviewer feedback." },
+    knowledge: { concept: "Sequential orchestration passes work through participants in a defined order.", setup: "Install agent-framework-orchestrations and use the same configured Azure OpenAI client for both agents.", outcome: "The transcript shows writer output followed by reviewer feedback." },
   },
   {
     id: "17", slug: "concurrent", folder: "17_multi_agent_concurrent", title: "Run Agents Concurrently",
@@ -307,8 +308,8 @@ const labs = [
     objectives: ["Create an index, knowledge source, and knowledge base", "Compare classic semantic retrieval with agentic retrieval", "Inspect activity, references, and conversational follow-up"],
     concepts: [["Knowledge source", "Connects a knowledge base to searchable content."], ["Query planning", "Decomposes complex questions into focused subqueries."], ["Answer synthesis", "Combines grounded results and references into a response."]],
     packages: SEARCH, needsFoundry: true,
-    env: ["AZURE_OPENAI_ENDPOINT=https://<foundry-resource>.openai.azure.com/openai/v1", "AZURE_OPENAI_DEPLOYMENT=gpt-5", "AZURE_SEARCH_AGENTIC_INDEX_NAME=travel-agentic-demo", "AZURE_SEARCH_AGENTIC_KNOWLEDGE_SOURCE_NAME=travel-agentic-source", "AZURE_SEARCH_AGENTIC_KNOWLEDGE_BASE_NAME=travel-agentic-kb"],
-    resources: ["Use an Azure AI Search Basic service with system-assigned managed identity and RBAC enabled.", "Assign the learner Search Service Contributor, Search Index Data Contributor, and Search Index Data Reader.", "Assign the Search service managed identity Cognitive Services User on the Foundry resource used by the knowledge-base model.", "This preview feature and its model calls can incur charges."],
+    env: ["AZURE_SEARCH_ADMIN_KEY=<admin-key-used-only-to-create-resources>", "AZURE_SEARCH_AGENTIC_INDEX_NAME=travel-agentic-demo", "AZURE_SEARCH_AGENTIC_KNOWLEDGE_SOURCE_NAME=travel-agentic-source", "AZURE_SEARCH_AGENTIC_KNOWLEDGE_BASE_NAME=travel-agentic-kb"],
+    resources: ["Use an Azure AI Search Basic service with system-assigned managed identity and RBAC enabled.", "Have the instructor provide a Search admin key for resource creation and a query key for retrieval; keep both only in .env.", "Assign the Search service managed identity Cognitive Services User on the Foundry resource used by the knowledge-base model.", "This preview feature and its model calls can incur charges."],
     resourceCommands: [{ label: "Create resources and upload the supplied CSV after roles propagate", code: "python .\\20_agentic_retrieval\\student_00_create_resources.py" }],
     files: [
       { source: "20_agentic_retrieval/00_create_resources.py", target: "20_agentic_retrieval/student_00_create_resources.py", label: "Use case 1 — Provision retrieval resources", purpose: "Create the semantic index, upload CSV rows, and create the knowledge source and knowledge base." },
@@ -328,7 +329,7 @@ const labs = [
     why: "Identity-aware RAG filters documents inside Azure AI Search before grounding reaches the model. Prompt instructions alone cannot enforce document authorization.",
     objectives: ["Create permission-filter fields and upload ACL metadata", "Pass a Search-scoped end-user token at query time", "Prove allowed and denied retrieval paths"],
     concepts: [["Service credential", "Authenticates the application to the Search service."], ["Query-source identity", "Represents the end user whose document access is evaluated."], ["Permission filter", "Compares user and group object IDs before returning content."]],
-    packages: SEARCH, needsFoundry: true,
+    packages: SEARCH, needsFoundry: true, needsAzureLogin: true,
     env: ["AZURE_SEARCH_SECURE_INDEX_NAME=travel-secure-demo", "AZURE_SEARCH_SECURE_KNOWLEDGE_SOURCE_NAME=travel-secure-source", "AZURE_SEARCH_SECURE_KNOWLEDGE_BASE_NAME=travel-secure-kb", "DEMO_FINANCE_GROUP_OBJECT_ID=<optional Entra group object ID>"],
     resources: ["Complete Lab 20 infrastructure and role setup first.", "Use stable Entra object IDs in UserIds and GroupIds; never use email addresses as ACL values.", "The pinned beta SDK exposes query_source_authorization in the tested code. Current Learn examples may show x_ms_query_source_authorization; upgrade only after revalidation.", "For a two-user demonstration, use a real finance group and compare a member with a nonmember."],
     files: [
@@ -348,7 +349,7 @@ const labs = [
     why: "Agent development is an evidence loop: define expected behavior, build a baseline, improve a candidate, evaluate both, and make an explicit release decision.",
     objectives: ["Compare baseline and candidate instructions", "Run both against a shared evaluation set", "Record a release decision against agreed criteria"],
     concepts: [["Baseline", "The current behavior used as a comparison point."], ["Candidate", "A proposed change evaluated against the same cases."], ["Release decision", "Uses evidence and risk criteria rather than intuition alone."]],
-    packages: CORE, needsFoundry: true, resources: ["Use a Foundry model deployment consistently for both baseline and candidate comparisons."],
+    packages: CORE, needsFoundry: true, resources: ["Use the same Azure OpenAI deployment consistently for both baseline and candidate comparisons."],
     files: [{ source: "22_development_lifecycle/demo.py", target: "22_development_lifecycle/student_demo.py", label: "Build the baseline-versus-candidate comparison", purpose: "Run two instruction sets against the same evaluation cases." }],
     support: ["22_development_lifecycle/evaluation_cases.json", "22_development_lifecycle/lab/release_checklist.md", "22_development_lifecycle/lab/starter.py", "22_development_lifecycle/lab/solution.py"],
     run: ["python .\\22_development_lifecycle\\student_demo.py"],
@@ -362,7 +363,7 @@ const labs = [
     why: "ResponsesHostServer adds a service boundary around the same Agent abstraction, allowing Foundry to deploy and invoke your own code as a Hosted agent.",
     objectives: ["Create an Agent with DefaultAzureCredential", "Expose it through ResponsesHostServer", "Understand the local-to-hosted deployment flow"],
     concepts: [["Responses host", "Exposes the Agent through a Responses-compatible server."], ["DefaultAzureCredential", "Uses local developer identity and hosted workload identity in different environments."], ["Hosted agent", "Runs custom agent code in Foundry-managed deployment infrastructure."]],
-    packages: HOSTING, needsFoundry: true,
+    packages: HOSTING, needsFoundry: true, modelAuth: "entra", needsAzureLogin: true,
     env: ["AZURE_AI_MODEL_DEPLOYMENT_NAME=<hosted deployment model; optional locally>"],
     resources: ["Install Azure Developer CLI (azd) and Docker Desktop before the hosted deployment portion.", "Use a Foundry project where Hosted agents are enabled and confirm subscription quota.", "Local startup does not prove remote deployment; validate the deployed endpoint separately."],
     resourceCommands: [{ label: "Initialize Microsoft's official Agent Framework Hosted-agent sample", code: "$env:AZURE_DEV_USER_AGENT='microsoft_foundry_course'\nazd ai agent init -m \"https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/agent-framework/responses/01-basic/azure.yaml\" --deploy-mode container" }],
@@ -383,7 +384,7 @@ const labs = [
     why: "A hosted agent should access Azure resources with workload identity and RBAC, not embedded keys. The same code uses Azure CLI identity locally and the Hosted agent identity after deployment.",
     objectives: ["Create and populate a Blob container", "Grant narrowly scoped Blob data access", "Read the policy with DefaultAzureCredential from an agent tool"],
     concepts: [["Workload identity", "Represents the deployed agent without a stored secret."], ["RBAC", "Authorizes the identity to read one Azure resource."], ["Authentication vs authorization", "A valid identity still needs the correct resource role."]],
-    packages: `${HOSTING} azure-storage-blob==12.30.1`, needsFoundry: true,
+    packages: `${HOSTING} azure-storage-blob==12.30.1`, needsFoundry: true, modelAuth: "entra", needsAzureLogin: true,
     env: ["AZURE_STORAGE_ACCOUNT_URL=https://<storage-account>.blob.core.windows.net", "AZURE_STORAGE_CONTAINER_NAME=agent-framework-demos", "AZURE_STORAGE_BLOB_NAME=travel-policy.txt"],
     resources: ["Create a StorageV2 account and private Blob container.", "Grant the learner Storage Blob Data Contributor for setup and Storage Blob Data Reader for the read demonstration.", "After hosted deployment, grant the Hosted agent identity Storage Blob Data Reader at the narrowest practical scope.", "Do not put a connection string or account key in .env."],
     resourceCommands: [
@@ -407,7 +408,7 @@ const labs = [
     why: "Agent Optimizer uses a measurable evaluation set to propose better instructions. A candidate should be reviewed and compared before it replaces the baseline.",
     objectives: ["Load the active agent configuration", "Define evaluation tasks and criteria", "Run, review, and optionally apply an optimization candidate"],
     concepts: [["Baseline configuration", "Defines the starting model and instructions."], ["Evaluation dataset", "Provides tasks and measurable success criteria."], ["Candidate", "An optimizer-generated configuration that still requires review."]],
-    packages: `${HOSTING} azure-ai-agentserver-optimization==1.0.0b1`, needsFoundry: true,
+    packages: `${HOSTING} azure-ai-agentserver-optimization==1.0.0b1`, needsFoundry: true, modelAuth: "entra", needsAzureLogin: true,
     resources: ["Agent Optimizer is limited preview; confirm access and supported models before class.", "Install azd and initialize/deploy the official optimization sample before launching a remote job.", "Optimization can create model and evaluation charges."],
     resourceCommands: [
       { label: "Start and monitor optimization after deploying the official sample", code: "$env:AZURE_DEV_USER_AGENT='microsoft_foundry_course'\nazd ai agent optimize\nazd ai agent optimize status <job-id> --watch" },
@@ -432,7 +433,7 @@ const labs = [
     why: "Browser automation adds a powerful external-action surface. The first exercise should be bounded, read-only, synthetic, and based on Microsoft's official hosted sample.",
     objectives: ["Initialize the official Browser Automation sample", "Provision its required workspace and identity roles", "Read a synthetic flight-status page without performing writes"],
     concepts: [["Browser session", "Provides an isolated automation environment."], ["Toolbox", "Makes the hosted browser tool available to the agent."], ["Action boundary", "Limits the first task to read-only navigation and extraction."]],
-    packages: HOSTING, needsFoundry: true,
+    packages: HOSTING, needsFoundry: true, modelAuth: "entra", needsAzureLogin: true,
     resources: ["Install azd and Docker, and obtain Owner or Contributor access to the target resource group.", "Create or provision the Playwright Workspace and Toolbox exactly through the official quickstart.", "Keep authentication, payments, bookings, and personal data out of the first browser lab.", "Browser Automation is preview and can incur Azure charges."],
     resourceCommands: [{ label: "Initialize the current official Agent Framework sample", code: "$env:AZURE_DEV_USER_AGENT='microsoft_foundry_course'\nazd ai agent init -m \"https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/agent-framework/responses/14-browser-automation-agent/azure.yaml\" --deploy-mode container" }],
     files: [
@@ -455,7 +456,7 @@ labs[mcpServerIndex] = {
   slug: "mcp",
   title: "Use a Deployed MCP Server from Agent Framework",
   duration: "50 min",
-  resource: "Foundry + deployed Azure Container Apps MCP",
+  resource: "Azure OpenAI + deployed Azure Container Apps MCP",
   why: "Learners connect an Agent Framework agent to the instructor-provided Contoso Change Risk Advisor instead of building or deploying another MCP server.",
   env: [
     "MCP_SERVER_NAME=Contoso Change Risk Advisor",
@@ -466,11 +467,11 @@ labs[mcpServerIndex] = {
     "Use the instructor-provided Contoso Change Risk Advisor deployment; do not create an MCP server or Azure Container App.",
     "The MCP endpoint is https://ca-copilot-dev-e925.redpond-16f6bb64.centralindia.azurecontainerapps.io/mcp.",
     "Authentication uses the X-API-Key request header. Store the supplied key only in the git-ignored .env file.",
-    "Use the same Foundry project and deployed model as the earlier agent labs.",
+    "Use the same Azure OpenAI endpoint, key, and deployed model as the earlier agent labs.",
   ],
   documentationLinks: [
     { label: "Use MCP tools with Agent Framework", url: "https://learn.microsoft.com/en-us/agent-framework/agents/tools/local-mcp-tools" },
-    { label: "Microsoft Foundry model provider", url: "https://learn.microsoft.com/en-us/agent-framework/agents/providers/microsoft-foundry" },
+    { label: "Agent Framework OpenAI integration", url: "https://learn.microsoft.com/en-us/agent-framework/hosting/self-hosting/openai-endpoints" },
   ],
 };
 labs.splice(mcpClientIndex, 1);
@@ -631,7 +632,12 @@ function renderCode(code, language = "PowerShell") {
 
 function commonSetup(lab) {
   const envLines = [];
-  if (lab.needsFoundry) {
+  const modelAuth = lab.modelAuth || (lab.needsFoundry ? "apiKey" : "none");
+  if (modelAuth === "apiKey") {
+    envLines.push("AZURE_OPENAI_ENDPOINT=https://<foundry-resource>.openai.azure.com/openai/v1");
+    envLines.push("AZURE_OPENAI_API_KEY=<instructor-provided-resource-key>");
+    envLines.push("AZURE_OPENAI_DEPLOYMENT=<deployed-model-name>");
+  } else if (modelAuth === "entra") {
     envLines.push("FOUNDRY_PROJECT_ENDPOINT=https://<foundry-resource>.services.ai.azure.com/api/projects/<project>");
     envLines.push("FOUNDRY_MODEL=<deployed-model-name>");
   }
@@ -642,11 +648,11 @@ function commonSetup(lab) {
     <h3>Step 1 — Verify prerequisites</h3>
     <ul class="checklist">
       <li><label><input type="checkbox" data-progress="${lab.id}-python"> Python 3.12 is installed.</label></li>
-      <li><label><input type="checkbox" data-progress="${lab.id}-cli"> Azure CLI is installed.</label></li>
+      ${lab.needsAzureLogin || modelAuth === "entra" ? `<li><label><input type="checkbox" data-progress="${lab.id}-cli"> Azure CLI is installed for this identity-dependent lab.</label></li>` : ""}
       <li><label><input type="checkbox" data-progress="${lab.id}-editor"> VS Code or another Python editor is available.</label></li>
       <li><label><input type="checkbox" data-progress="${lab.id}-access"> Required Azure access described below is available.</label></li>
     </ul>
-    ${renderCode("python --version\naz --version", "PowerShell")}
+    ${renderCode(lab.needsAzureLogin || modelAuth === "entra" ? "python --version\naz --version" : "python --version", "PowerShell")}
     <h3>Step 2 — Create and activate the virtual environment</h3>
     <p>Create one course environment in the repository root. Reuse it for later labs.</p>
     ${renderCode("python -m venv venv\n.\\venv\\Scripts\\Activate.ps1", "PowerShell")}
@@ -660,14 +666,17 @@ function commonSetup(lab) {
     <p>Create <code>.env</code> once from the safe template, then replace placeholders. Never commit <code>.env</code>.</p>
     ${renderCode("Copy-Item .env.example .env\nnotepad .env", "PowerShell")}
     ${envLines.length ? renderCode(envLines.join("\n"), "Environment") : ""}
-    ${lab.needsFoundry ? `<h3>Step 5 — Authenticate for classroom development</h3><p>Sign in with the identity that has access to the Foundry project and any additional Azure resources.</p>${renderCode("az login\naz account show --query \"{subscription:name, tenant:tenantId}\" -o table", "PowerShell")}` : ""}
+    ${lab.needsAzureLogin || modelAuth === "entra" ? `<h3>Step 5 — Authenticate for the identity-dependent operations</h3><p>This lab includes a Foundry deployment, managed-identity, or per-user authorization operation that cannot use the shared model key.</p>${renderCode("az login\naz account show --query \"{subscription:name, tenant:tenantId}\" -o table", "PowerShell")}` : ""}
   `;
 }
 
 function renderResources(lab) {
-  const foundry = lab.needsFoundry
-    ? `<li>In Microsoft Foundry, create or select a project, deploy the instructor-approved chat model, and copy its project endpoint and deployment name into <code>.env</code>.</li><li>Grant the learner the project-level role required to invoke the deployment. For a shared class, provision this before the lab.</li>`
-    : "";
+  const modelAuth = lab.modelAuth || (lab.needsFoundry ? "apiKey" : "none");
+  const foundry = modelAuth === "apiKey"
+    ? `<li>Obtain the instructor-provided Azure OpenAI <code>/openai/v1</code> endpoint, resource key, and deployment name. Store them only in the git-ignored <code>.env</code>.</li><li>The shared key is for classroom model inference only. Never commit, print, screenshot, or submit it.</li>`
+    : modelAuth === "entra"
+      ? `<li>In Microsoft Foundry, create or select a project, deploy the instructor-approved chat model, and copy its project endpoint and deployment name into <code>.env</code>.</li><li>This lab intentionally retains Microsoft Entra authentication because Hosted Agents, managed identity, Toolbox, or optimization cannot be taught correctly with a model API key alone.</li>`
+      : "";
   const commands = (lab.resourceCommands || []).map((item) => `<h4>${escapeHtml(item.label)}</h4>${renderCode(item.code, "PowerShell")}`).join("");
   return `<h2 id="resources">Create or verify required resources</h2><ol>${foundry}${lab.resources.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>${commands}<section class="warning"><strong>Cost and cleanup:</strong> Azure Search, models, hosted agents, storage, browser workspaces, and optimization jobs can incur charges. Use instructor-provided resources where possible and follow your organization's cleanup policy after class.</section>`;
 }

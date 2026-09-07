@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent Evaluation Dashboard</title>
+  <style>
+    :root {
+      --bg: #f6f8fc;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #5d6b83;
+      --border: #dce3ef;
+      --ok: #14804a;
+      --bad: #b11f3b;
+      --accent: #0f62fe;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #eef3ff 0%, var(--bg) 35%);
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, sans-serif;
+    }
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 24px auto 40px;
+    }
+    h1 { margin: 0 0 6px; }
+    .muted { color: var(--muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 12px;
+      margin: 16px 0 18px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 4px 14px rgba(32, 52, 89, 0.06);
+    }
+    .value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .provider-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+    .pill {
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--ok);
+    }
+    .pill.bad { background: var(--bad); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    th, td {
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      padding: 8px;
+      vertical-align: top;
+    }
+    th { color: var(--muted); }
+    .score {
+      display: inline-block;
+      margin: 2px 8px 2px 0;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+    }
+    .score.ok { color: var(--ok); border-color: #bde5cf; background: #eefaf3; }
+    .score.bad { color: var(--bad); border-color: #f2c0cb; background: #fff1f4; }
+    .error {
+      border-left: 4px solid #ff8f1f;
+      background: #fff7eb;
+      padding: 10px;
+      border-radius: 6px;
+      color: #7e4a0c;
+      margin-bottom: 10px;
+      white-space: pre-wrap;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Agent Evaluation Dashboard</h1>
+    <div class="muted" id="timestamp">Loading...</div>
+
+    <section class="grid" id="summary"></section>
+    <div id="foundry-error"></div>
+    <section id="providers"></section>
+  </main>
+
+  <script>
+    async function loadData() {
+      const response = await fetch('./eval_results.json', { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error('Could not load eval_results.json. Run demo.py first.');
+      }
+      return response.json();
+    }
+
+    function summaryCard(label, value) {
+      return `<article class="card"><div class="muted">${label}</div><div class="value">${value}</div></article>`;
+    }
+
+    function renderSummary(data) {
+      const summary = document.getElementById('summary');
+      const s = data.summary || {};
+      summary.innerHTML = [
+        summaryCard('Providers', s.providers ?? 0),
+        summaryCard('Passed Checks', `${s.passed ?? 0}/${s.total ?? 0}`),
+        summaryCard('Pass Rate', `${s.pass_rate ?? 0}%`),
+        summaryCard('Generated', new Date(data.generated_at).toLocaleTimeString())
+      ].join('');
+      document.getElementById('timestamp').textContent = `Generated at ${new Date(data.generated_at).toLocaleString()}`;
+
+      if (s.foundry_error) {
+        document.getElementById('foundry-error').innerHTML =
+          `<div class="error"><strong>Foundry evaluator warning:</strong> ${s.foundry_error}</div>`;
+      }
+    }
+
+    function renderProvider(provider) {
+      const statusClass = provider.all_passed ? 'pill' : 'pill bad';
+      const perEval = (provider.per_evaluator || []).map(p =>
+        `<tr><td>${p.name}</td><td>${p.passed}/${p.total}</td></tr>`
+      ).join('');
+
+      const items = (provider.items || []).map(item => {
+        const scoreBad = item.scores.some(s => !s.passed);
+        const scores = item.scores.map(s =>
+          `<span class="score ${s.passed ? 'ok' : 'bad'}">${s.name}: ${s.passed ? 'PASS' : 'FAIL'}</span>`
+        ).join('');
+        return `<tr>
+          <td>${item.query || ''}</td>
+          <td>${item.response || ''}</td>
+          <td><span class="${scoreBad ? 'score bad' : 'score ok'}">${item.status}</span></td>
+          <td>${scores}</td>
+        </tr>`;
+      }).join('');
+
+      const reportLink = provider.report_url
+        ? `<div class="muted">Portal: <a href="${provider.report_url}" target="_blank" rel="noreferrer">Open Foundry report</a></div>`
+        : '';
+
+      return `<article class="panel">
+        <div class="provider-header">
+          <h2>${provider.provider}</h2>
+          <span class="${statusClass}">${provider.passed}/${provider.total} passed</span>
+        </div>
+        ${reportLink}
+        ${(provider.per_evaluator || []).length ? `<table><thead><tr><th>Evaluator</th><th>Pass</th></tr></thead><tbody>${perEval}</tbody></table>` : ''}
+        <table>
+          <thead><tr><th>Query</th><th>Response</th><th>Status</th><th>Checks</th></tr></thead>
+          <tbody>${items}</tbody>
+        </table>
+      </article>`;
+    }
+
+    async function main() {
+      try {
+        const data = await loadData();
+        renderSummary(data);
+        const providers = document.getElementById('providers');
+        providers.innerHTML = (data.providers || []).map(renderProvider).join('');
+      } catch (err) {
+        document.body.innerHTML = `<main><h1>Agent Evaluation Dashboard</h1><div class="error">${err.message}</div></main>`;
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>

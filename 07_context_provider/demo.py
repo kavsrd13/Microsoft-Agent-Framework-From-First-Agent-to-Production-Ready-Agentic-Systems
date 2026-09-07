@@ -3,8 +3,7 @@ import os
 from typing import Any
 
 from agent_framework import Agent, AgentSession, ContextProvider, SessionContext
-from agent_framework.foundry import FoundryChatClient
-from azure.identity import AzureCliCredential
+from agent_framework.openai import OpenAIChatClient
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -50,10 +49,10 @@ class UserMemoryProvider(ContextProvider):
 
 async def main() -> None:
     agent = Agent(
-        client=FoundryChatClient(
-            project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-            model=os.environ["FOUNDRY_MODEL"],
-            credential=AzureCliCredential(),
+        client=OpenAIChatClient(
+            base_url=os.environ["AZURE_OPENAI_ENDPOINT"],
+            api_key=os.environ["AZURE_OPENAI_API_KEY"],
+            model=os.environ["AZURE_OPENAI_DEPLOYMENT"],
         ),
         name="ContextAgent",
         instructions="You are a friendly assistant.",
@@ -68,4 +67,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

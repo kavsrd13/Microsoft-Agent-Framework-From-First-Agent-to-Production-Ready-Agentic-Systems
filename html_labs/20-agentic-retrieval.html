@@ -17,12 +17,11 @@
     <h3>Step 1 — Verify prerequisites</h3>
     <ul class="checklist">
       <li><label><input type="checkbox" data-progress="20-python"> Python 3.12 is installed.</label></li>
-      <li><label><input type="checkbox" data-progress="20-cli"> Azure CLI is installed.</label></li>
+
       <li><label><input type="checkbox" data-progress="20-editor"> VS Code or another Python editor is available.</label></li>
       <li><label><input type="checkbox" data-progress="20-access"> Required Azure access described below is available.</label></li>
     </ul>
-    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python --version
-az --version</code></pre></div>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python --version</code></pre></div>
     <h3>Step 2 — Create and activate the virtual environment</h3>
     <p>Create one course environment in the repository root. Reuse it for later labs.</p>
     <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m venv venv
@@ -35,27 +34,26 @@ az --version</code></pre></div>
     <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 python -m pip check</code></pre></div>
-    <details><summary>Running only this lab outside the course repository</summary><p>Install these direct packages:</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install agent-framework-core==1.15.0 agent-framework-foundry==1.11.0 azure-identity==1.25.3 python-dotenv==1.2.3 agent-framework-azure-ai-search==1.0.0b260813 azure-search-documents==12.1.0b1</code></pre></div></details>
+    <details><summary>Running only this lab outside the course repository</summary><p>Install these direct packages:</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install agent-framework-core==1.15.0 agent-framework-openai==1.14.1 python-dotenv==1.2.3 agent-framework-azure-ai-search==1.0.0b260813 azure-search-documents==12.1.0b1 azure-identity==1.25.3</code></pre></div></details>
     <h3>Step 4 — Create the environment file</h3>
     <p>Create <code>.env</code> once from the safe template, then replace placeholders. Never commit <code>.env</code>.</p>
     <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>Copy-Item .env.example .env
 notepad .env</code></pre></div>
-    <div class="code-shell"><div class="code-head"><span>Environment</span><button class="copy-button" type="button">Copy</button></div><pre><code>FOUNDRY_PROJECT_ENDPOINT=https://&lt;foundry-resource&gt;.services.ai.azure.com/api/projects/&lt;project&gt;
-FOUNDRY_MODEL=&lt;deployed-model-name&gt;
-AZURE_OPENAI_ENDPOINT=https://&lt;foundry-resource&gt;.openai.azure.com/openai/v1
-AZURE_OPENAI_DEPLOYMENT=gpt-5
+    <div class="code-shell"><div class="code-head"><span>Environment</span><button class="copy-button" type="button">Copy</button></div><pre><code>AZURE_OPENAI_ENDPOINT=https://&lt;foundry-resource&gt;.openai.azure.com/openai/v1
+AZURE_OPENAI_API_KEY=&lt;instructor-provided-resource-key&gt;
+AZURE_OPENAI_DEPLOYMENT=&lt;deployed-model-name&gt;
+AZURE_SEARCH_ADMIN_KEY=&lt;admin-key-used-only-to-create-resources&gt;
 AZURE_SEARCH_AGENTIC_INDEX_NAME=travel-agentic-demo
 AZURE_SEARCH_AGENTIC_KNOWLEDGE_SOURCE_NAME=travel-agentic-source
 AZURE_SEARCH_AGENTIC_KNOWLEDGE_BASE_NAME=travel-agentic-kb</code></pre></div>
-    <h3>Step 5 — Authenticate for classroom development</h3><p>Sign in with the identity that has access to the Foundry project and any additional Azure resources.</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>az login
-az account show --query &quot;{subscription:name, tenant:tenantId}&quot; -o table</code></pre></div>
 
-  <h2 id="resources">Create or verify required resources</h2><ol><li>In Microsoft Foundry, create or select a project, deploy the instructor-approved chat model, and copy its project endpoint and deployment name into <code>.env</code>.</li><li>Grant the learner the project-level role required to invoke the deployment. For a shared class, provision this before the lab.</li><li>Use an Azure AI Search Basic service with system-assigned managed identity and RBAC enabled.</li><li>Assign the learner Search Service Contributor, Search Index Data Contributor, and Search Index Data Reader.</li><li>Assign the Search service managed identity Cognitive Services User on the Foundry resource used by the knowledge-base model.</li><li>This preview feature and its model calls can incur charges.</li></ol><h4>Create resources and upload the supplied CSV after roles propagate</h4><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python .\20_agentic_retrieval\student_00_create_resources.py</code></pre></div><section class="warning"><strong>Cost and cleanup:</strong> Azure Search, models, hosted agents, storage, browser workspaces, and optimization jobs can incur charges. Use instructor-provided resources where possible and follow your organization's cleanup policy after class.</section>
+
+  <h2 id="resources">Create or verify required resources</h2><ol><li>Obtain the instructor-provided Azure OpenAI <code>/openai/v1</code> endpoint, resource key, and deployment name. Store them only in the git-ignored <code>.env</code>.</li><li>The shared key is for classroom model inference only. Never commit, print, screenshot, or submit it.</li><li>Use an Azure AI Search Basic service with system-assigned managed identity and RBAC enabled.</li><li>Have the instructor provide a Search admin key for resource creation and a query key for retrieval; keep both only in .env.</li><li>Assign the Search service managed identity Cognitive Services User on the Foundry resource used by the knowledge-base model.</li><li>This preview feature and its model calls can incur charges.</li></ol><h4>Create resources and upload the supplied CSV after roles propagate</h4><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python .\20_agentic_retrieval\student_00_create_resources.py</code></pre></div><section class="warning"><strong>Cost and cleanup:</strong> Azure Search, models, hosted agents, storage, browser workspaces, and optimization jobs can incur charges. Use instructor-provided resources where possible and follow your organization's cleanup policy after class.</section>
   <h2 id="build">Build the lab in modules</h2><section class="file-build"><h3>Use case 1 — Provision retrieval resources</h3><p>Create the semantic index, upload CSV rows, and create the knowledge source and knowledge base.</p><div class="file-target"><strong>Create:</strong> <code>20_agentic_retrieval/student_00_create_resources.py</code></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">1</div><div class="step-body"><h4>Import the required libraries</h4><p>Add only the SDK types used by this part of the lab.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import csv
 import os
 from pathlib import Path
 
-from azure.identity import AzureCliCredential
+from azure.core.credentials import AzureKeyCredential
 from azure.core.exceptions import HttpResponseError
 from azure.search.documents import SearchClient
 from azure.search.documents.indexes import SearchIndexClient
@@ -87,7 +85,7 @@ GPT_DEPLOYMENT = os.environ[&quot;AZURE_OPENAI_DEPLOYMENT&quot;]
 
 
 def main() -&gt; None:
-    credential = AzureCliCredential()
+    credential = AzureKeyCredential(os.environ[&quot;AZURE_SEARCH_ADMIN_KEY&quot;])
     index_client = SearchIndexClient(endpoint=SEARCH_ENDPOINT, credential=credential)</code></pre></div></div></article><article class="step-card"><div class="step-number">3</div><div class="step-body"><h4>Create and populate Search resources</h4><p>Define the schema or knowledge resource and load the classroom data.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    # Documentation pattern: searchable fields plus a semantic configuration.
     index = SearchIndex(
         name=INDEX_NAME,
@@ -174,49 +172,47 @@ import os
 
 from agent_framework import Agent
 from agent_framework.azure import AzureAISearchContextProvider
-from agent_framework.foundry import FoundryChatClient
-from azure.identity.aio import AzureCliCredential
+from agent_framework.openai import OpenAIChatClient
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
 async def main() -&gt; None:
-    async with AzureCliCredential() as credential:
-        search_provider = AzureAISearchContextProvider(
-            source_id=&quot;travel_search&quot;,
-            endpoint=os.environ[&quot;AZURE_SEARCH_ENDPOINT&quot;],
-            index_name=os.environ[&quot;AZURE_SEARCH_AGENTIC_INDEX_NAME&quot;],
-            credential=credential,
-            mode=&quot;semantic&quot;,
-            top_k=3,
-        )</code></pre></div></div></article><article class="step-card"><div class="step-number">8</div><div class="step-body"><h4>Load configuration</h4><p>Read endpoints, model names, and non-secret settings from the project environment.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>        async with (
-            search_provider,
-            Agent(
-                client=FoundryChatClient(
-                    project_endpoint=os.environ[&quot;FOUNDRY_PROJECT_ENDPOINT&quot;],
-                    model=os.environ[&quot;FOUNDRY_MODEL&quot;],
-                    credential=credential,
-                ),
-                name=&quot;ClassicRAGAgent&quot;,
-                instructions=(
-                    &quot;Answer only from retrieved fictional travel context. &quot;
-                    &quot;Say 'I don't know' when the context is insufficient.&quot;
-                ),
-                context_providers=[search_provider],
-            ) as agent,
-        ):
-            result = await agent.run(
-                &quot;For a Mumbai-to-Paris connection in Doha, how long is the terminal transfer?&quot;
-            )
-            print(result.text)
+    search_provider = AzureAISearchContextProvider(
+        source_id=&quot;travel_search&quot;,
+        endpoint=os.environ[&quot;AZURE_SEARCH_ENDPOINT&quot;],
+        index_name=os.environ[&quot;AZURE_SEARCH_AGENTIC_INDEX_NAME&quot;],
+        api_key=os.environ[&quot;AZURE_SEARCH_API_KEY&quot;],
+        mode=&quot;semantic&quot;,
+        top_k=3,
+    )</code></pre></div></div></article><article class="step-card"><div class="step-number">8</div><div class="step-body"><h4>Load configuration</h4><p>Read endpoints, model names, and non-secret settings from the project environment.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    async with (
+        search_provider,
+        Agent(
+            client=OpenAIChatClient(
+                base_url=os.environ[&quot;AZURE_OPENAI_ENDPOINT&quot;],
+                api_key=os.environ[&quot;AZURE_OPENAI_API_KEY&quot;],
+                model=os.environ[&quot;AZURE_OPENAI_DEPLOYMENT&quot;],
+            ),
+            name=&quot;ClassicRAGAgent&quot;,
+            instructions=(
+                &quot;Answer only from retrieved fictional travel context. &quot;
+                &quot;Say 'I don't know' when the context is insufficient.&quot;
+            ),
+            context_providers=[search_provider],
+        ) as agent,
+    ):
+        result = await agent.run(
+            &quot;For a Mumbai-to-Paris connection in Doha, how long is the terminal transfer?&quot;
+        )
+        print(result.text)
 
 
 if __name__ == &quot;__main__&quot;:
     asyncio.run(main())</code></pre></div></div></article></section><section class="file-build"><h3>Use case 3 — Direct knowledge-base retrieval</h3><p>Inspect query planning activity, answer synthesis, references, and follow-up history.</p><div class="file-target"><strong>Create:</strong> <code>20_agentic_retrieval/student_02_agentic_retrieval.py</code></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">9</div><div class="step-body"><h4>Import the required libraries</h4><p>Add only the SDK types used by this part of the lab.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import json
 import os
 
-from azure.identity import AzureCliCredential
+from azure.core.credentials import AzureKeyCredential
 from azure.search.documents.knowledgebases import KnowledgeBaseRetrievalClient
 from azure.search.documents.knowledgebases.models import (
     KnowledgeBaseMessage,
@@ -261,7 +257,7 @@ load_dotenv()</code></pre></div></div></article><article class="step-card"><div 
 
 
 def main() -&gt; None:
-    credential = AzureCliCredential()
+    credential = AzureKeyCredential(os.environ[&quot;AZURE_SEARCH_API_KEY&quot;])
     client = KnowledgeBaseRetrievalClient(
         endpoint=os.environ[&quot;AZURE_SEARCH_ENDPOINT&quot;],
         knowledge_base_name=os.environ[&quot;AZURE_SEARCH_AGENTIC_KNOWLEDGE_BASE_NAME&quot;],
@@ -290,43 +286,41 @@ import os
 
 from agent_framework import Agent
 from agent_framework.azure import AzureAISearchContextProvider
-from agent_framework.foundry import FoundryChatClient
-from azure.identity.aio import AzureCliCredential
+from agent_framework.openai import OpenAIChatClient
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
 async def main() -&gt; None:
-    async with AzureCliCredential() as credential:
-        search_provider = AzureAISearchContextProvider(
-            source_id=&quot;agentic_travel_search&quot;,
-            endpoint=os.environ[&quot;AZURE_SEARCH_ENDPOINT&quot;],
-            knowledge_base_name=os.environ[&quot;AZURE_SEARCH_AGENTIC_KNOWLEDGE_BASE_NAME&quot;],
-            credential=credential,
-            mode=&quot;agentic&quot;,
-            knowledge_base_output_mode=&quot;answer_synthesis&quot;,
-            retrieval_reasoning_effort=&quot;low&quot;,
-        )</code></pre></div></div></article><article class="step-card"><div class="step-number">14</div><div class="step-body"><h4>Load configuration</h4><p>Read endpoints, model names, and non-secret settings from the project environment.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>        async with (
-            search_provider,
-            Agent(
-                client=FoundryChatClient(
-                    project_endpoint=os.environ[&quot;FOUNDRY_PROJECT_ENDPOINT&quot;],
-                    model=os.environ[&quot;FOUNDRY_MODEL&quot;],
-                    credential=credential,
-                ),
-                name=&quot;AgenticTravelAssistant&quot;,
-                instructions=(
-                    &quot;Use the agentic retrieval context for fictional Contoso Travel questions. &quot;
-                    &quot;Never invent policy details.&quot;
-                ),
-                context_providers=[search_provider],
-            ) as agent,
-        ):
-            result = await agent.run(
-                &quot;Combine the Doha connection, overnight cancellation, and delayed-baggage guidance into one checklist.&quot;
-            )
-            print(result.text)
+    search_provider = AzureAISearchContextProvider(
+        source_id=&quot;agentic_travel_search&quot;,
+        endpoint=os.environ[&quot;AZURE_SEARCH_ENDPOINT&quot;],
+        knowledge_base_name=os.environ[&quot;AZURE_SEARCH_AGENTIC_KNOWLEDGE_BASE_NAME&quot;],
+        api_key=os.environ[&quot;AZURE_SEARCH_API_KEY&quot;],
+        mode=&quot;agentic&quot;,
+        knowledge_base_output_mode=&quot;answer_synthesis&quot;,
+        retrieval_reasoning_effort=&quot;low&quot;,
+    )</code></pre></div></div></article><article class="step-card"><div class="step-number">14</div><div class="step-body"><h4>Load configuration</h4><p>Read endpoints, model names, and non-secret settings from the project environment.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    async with (
+        search_provider,
+        Agent(
+            client=OpenAIChatClient(
+                base_url=os.environ[&quot;AZURE_OPENAI_ENDPOINT&quot;],
+                api_key=os.environ[&quot;AZURE_OPENAI_API_KEY&quot;],
+                model=os.environ[&quot;AZURE_OPENAI_DEPLOYMENT&quot;],
+            ),
+            name=&quot;AgenticTravelAssistant&quot;,
+            instructions=(
+                &quot;Use the agentic retrieval context for fictional Contoso Travel questions. &quot;
+                &quot;Never invent policy details.&quot;
+            ),
+            context_providers=[search_provider],
+        ) as agent,
+    ):
+        result = await agent.run(
+            &quot;Combine the Doha connection, overnight cancellation, and delayed-baggage guidance into one checklist.&quot;
+        )
+        print(result.text)
 
 
 if __name__ == &quot;__main__&quot;:

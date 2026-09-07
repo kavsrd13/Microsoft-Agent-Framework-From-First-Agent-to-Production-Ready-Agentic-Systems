@@ -3,9 +3,8 @@ import os
 from typing import cast
 
 from agent_framework import Agent, Message
-from agent_framework.foundry import FoundryChatClient
+from agent_framework.openai import OpenAIChatClient
 from agent_framework.orchestrations import GroupChatBuilder, GroupChatState
-from azure.identity import AzureCliCredential
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,10 +16,10 @@ def round_robin_selector(state: GroupChatState) -> str:
 
 
 async def main() -> None:
-    client = FoundryChatClient(
-        project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-        model=os.environ["FOUNDRY_MODEL"],
-        credential=AzureCliCredential(),
+    client = OpenAIChatClient(
+        base_url=os.environ["AZURE_OPENAI_ENDPOINT"],
+        api_key=os.environ["AZURE_OPENAI_API_KEY"],
+        model=os.environ["AZURE_OPENAI_DEPLOYMENT"],
     )
     expert = Agent(
         client=client,
@@ -53,4 +52,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

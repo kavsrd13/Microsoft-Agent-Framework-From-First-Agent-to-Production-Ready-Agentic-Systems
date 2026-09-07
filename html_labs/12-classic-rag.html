@@ -24,12 +24,11 @@
     <h3>Step 1 — Verify prerequisites</h3>
     <ul class="checklist">
       <li><label><input type="checkbox" data-progress="12-python"> Python 3.12 is installed.</label></li>
-      <li><label><input type="checkbox" data-progress="12-cli"> Azure CLI is installed.</label></li>
+
       <li><label><input type="checkbox" data-progress="12-editor"> VS Code or another Python editor is available.</label></li>
       <li><label><input type="checkbox" data-progress="12-access"> Required Azure access described below is available.</label></li>
     </ul>
-    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python --version
-az --version</code></pre></div>
+    <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python --version</code></pre></div>
     <h3>Step 2 — Create and activate the virtual environment</h3>
     <p>Create one course environment in the repository root. Reuse it for later labs.</p>
     <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m venv venv
@@ -42,62 +41,57 @@ az --version</code></pre></div>
     <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 python -m pip check</code></pre></div>
-    <details><summary>Running only this lab outside the course repository</summary><p>Install these direct packages:</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install agent-framework-core==1.15.0 agent-framework-foundry==1.11.0 azure-identity==1.25.3 python-dotenv==1.2.3 agent-framework-azure-ai-search==1.0.0b260813 azure-search-documents==12.1.0b1</code></pre></div></details>
+    <details><summary>Running only this lab outside the course repository</summary><p>Install these direct packages:</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install agent-framework-core==1.15.0 agent-framework-openai==1.14.1 python-dotenv==1.2.3 agent-framework-azure-ai-search==1.0.0b260813 azure-search-documents==12.1.0b1 azure-identity==1.25.3</code></pre></div></details>
     <h3>Step 4 — Create the environment file</h3>
     <p>Create <code>.env</code> once from the safe template, then replace placeholders. Never commit <code>.env</code>.</p>
     <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>Copy-Item .env.example .env
 notepad .env</code></pre></div>
-    <div class="code-shell"><div class="code-head"><span>Environment</span><button class="copy-button" type="button">Copy</button></div><pre><code>FOUNDRY_PROJECT_ENDPOINT=https://&lt;foundry-resource&gt;.services.ai.azure.com/api/projects/&lt;project&gt;
-FOUNDRY_MODEL=&lt;deployed-model-name&gt;
+    <div class="code-shell"><div class="code-head"><span>Environment</span><button class="copy-button" type="button">Copy</button></div><pre><code>AZURE_OPENAI_ENDPOINT=https://&lt;foundry-resource&gt;.openai.azure.com/openai/v1
+AZURE_OPENAI_API_KEY=&lt;instructor-provided-resource-key&gt;
+AZURE_OPENAI_DEPLOYMENT=&lt;deployed-model-name&gt;
 AZURE_SEARCH_ENDPOINT=https://&lt;search-service&gt;.search.windows.net
 AZURE_SEARCH_INDEX_NAME=margies-index
 AZURE_SEARCH_API_KEY=&lt;query-key-from-part-a&gt;</code></pre></div>
-    <h3>Step 5 — Authenticate for classroom development</h3><p>Sign in with the identity that has access to the Foundry project and any additional Azure resources.</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>az login
-az account show --query &quot;{subscription:name, tenant:tenantId}&quot; -o table</code></pre></div>
 
-  <h2 id="resources">Create or verify required resources</h2><ol><li>In Microsoft Foundry, create or select a project, deploy the instructor-approved chat model, and copy its project endpoint and deployment name into <code>.env</code>.</li><li>Grant the learner the project-level role required to invoke the deployment. For a shared class, provision this before the lab.</li><li>Complete Part A before starting the Agent Framework code.</li><li>Reuse the Azure AI Search endpoint, query key, and margies-index created in Part A.</li><li>Use a Foundry project and deployed chat model that the signed-in learner can invoke.</li></ol><section class="warning"><strong>Cost and cleanup:</strong> Azure Search, models, hosted agents, storage, browser workspaces, and optimization jobs can incur charges. Use instructor-provided resources where possible and follow your organization's cleanup policy after class.</section>
+
+  <h2 id="resources">Create or verify required resources</h2><ol><li>Obtain the instructor-provided Azure OpenAI <code>/openai/v1</code> endpoint, resource key, and deployment name. Store them only in the git-ignored <code>.env</code>.</li><li>The shared key is for classroom model inference only. Never commit, print, screenshot, or submit it.</li><li>Complete Part A before starting the Agent Framework code.</li><li>Reuse the Azure AI Search endpoint, query key, and margies-index created in Part A.</li><li>Use the instructor-provided Azure OpenAI endpoint, API key, and deployed model.</li></ol><section class="warning"><strong>Cost and cleanup:</strong> Azure Search, models, hosted agents, storage, browser workspaces, and optimization jobs can incur charges. Use instructor-provided resources where possible and follow your organization's cleanup policy after class.</section>
   <h2 id="build">Build the lab in modules</h2><section class="file-build"><h3>Part B — Ground an Agent Framework agent</h3><p>Retrieve semantic matches from margies-index through AzureAISearchContextProvider.</p><div class="file-target"><strong>Create:</strong> <code>12_rag_azure_ai_search/student_lab.py</code></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">1</div><div class="step-body"><h4>Import the required libraries</h4><p>Add only the SDK types used by this part of the lab.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import asyncio
 import os
 
 from agent_framework import Agent
 from agent_framework.azure import AzureAISearchContextProvider
-from agent_framework.foundry import FoundryChatClient
-from azure.identity.aio import AzureCliCredential
+from agent_framework.openai import OpenAIChatClient
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
 async def main() -&gt; None:
-    search_key = os.environ.get(&quot;AZURE_SEARCH_API_KEY&quot;) or None
-
-    async with AzureCliCredential() as credential:
-        search_provider = AzureAISearchContextProvider(
-            source_id=&quot;search_provider&quot;,
-            endpoint=os.environ[&quot;AZURE_SEARCH_ENDPOINT&quot;],
-            index_name=os.environ[&quot;AZURE_SEARCH_INDEX_NAME&quot;],
-            api_key=search_key,
-            credential=None if search_key else credential,
-            mode=&quot;semantic&quot;,
-            top_k=3,
-        )</code></pre></div></div></article><article class="step-card"><div class="step-number">2</div><div class="step-body"><h4>Load configuration</h4><p>Read endpoints, model names, and non-secret settings from the project environment.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>        async with (
-            search_provider,
-            Agent(
-                client=FoundryChatClient(
-                    project_endpoint=os.environ[&quot;FOUNDRY_PROJECT_ENDPOINT&quot;],
-                    model=os.environ[&quot;FOUNDRY_MODEL&quot;],
-                    credential=credential,
-                ),
-                name=&quot;SearchAgent&quot;,
-                instructions=(
-                    &quot;Answer from the retrieved knowledge-base context. &quot;
-                    &quot;If the context does not contain the answer, say so.&quot;
-                ),
-                context_providers=[search_provider],
-            ) as agent,
-        ):
-            result = await agent.run(&quot;hotels in Dubai&quot;)
-            print(result.text)
+    search_provider = AzureAISearchContextProvider(
+        source_id=&quot;search_provider&quot;,
+        endpoint=os.environ[&quot;AZURE_SEARCH_ENDPOINT&quot;],
+        index_name=os.environ[&quot;AZURE_SEARCH_INDEX_NAME&quot;],
+        api_key=os.environ[&quot;AZURE_SEARCH_API_KEY&quot;],
+        mode=&quot;semantic&quot;,
+        top_k=3,
+    )</code></pre></div></div></article><article class="step-card"><div class="step-number">2</div><div class="step-body"><h4>Load configuration</h4><p>Read endpoints, model names, and non-secret settings from the project environment.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    async with (
+        search_provider,
+        Agent(
+            client=OpenAIChatClient(
+                base_url=os.environ[&quot;AZURE_OPENAI_ENDPOINT&quot;],
+                api_key=os.environ[&quot;AZURE_OPENAI_API_KEY&quot;],
+                model=os.environ[&quot;AZURE_OPENAI_DEPLOYMENT&quot;],
+            ),
+            name=&quot;SearchAgent&quot;,
+            instructions=(
+                &quot;Answer from the retrieved knowledge-base context. &quot;
+                &quot;If the context does not contain the answer, say so.&quot;
+            ),
+            context_providers=[search_provider],
+        ) as agent,
+    ):
+        result = await agent.run(&quot;hotels in Dubai&quot;)
+        print(result.text)
 
 
 if __name__ == &quot;__main__&quot;:

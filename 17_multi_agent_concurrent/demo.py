@@ -3,9 +3,8 @@ import os
 import sys
 
 from agent_framework import Agent, AgentResponse
-from agent_framework.foundry import FoundryChatClient
+from agent_framework.openai import OpenAIChatClient
 from agent_framework.orchestrations import ConcurrentBuilder
-from azure.identity import AzureCliCredential
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,10 +14,10 @@ if hasattr(sys.stdout, "reconfigure"):
 
 
 async def main() -> None:
-    client = FoundryChatClient(
-        project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-        model=os.environ["FOUNDRY_MODEL"],
-        credential=AzureCliCredential(),
+    client = OpenAIChatClient(
+        base_url=os.environ["AZURE_OPENAI_ENDPOINT"],
+        api_key=os.environ["AZURE_OPENAI_API_KEY"],
+        model=os.environ["AZURE_OPENAI_DEPLOYMENT"],
     )
     participants = [
         Agent(client=client, name="researcher", instructions="Identify factual opportunities and risks."),

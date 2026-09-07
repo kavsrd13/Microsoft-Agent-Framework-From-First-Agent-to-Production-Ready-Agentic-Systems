@@ -17,7 +17,7 @@
     <h3>Step 1 — Verify prerequisites</h3>
     <ul class="checklist">
       <li><label><input type="checkbox" data-progress="21-python"> Python 3.12 is installed.</label></li>
-      <li><label><input type="checkbox" data-progress="21-cli"> Azure CLI is installed.</label></li>
+      <li><label><input type="checkbox" data-progress="21-cli"> Azure CLI is installed for this identity-dependent lab.</label></li>
       <li><label><input type="checkbox" data-progress="21-editor"> VS Code or another Python editor is available.</label></li>
       <li><label><input type="checkbox" data-progress="21-access"> Required Azure access described below is available.</label></li>
     </ul>
@@ -35,21 +35,22 @@ az --version</code></pre></div>
     <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 python -m pip check</code></pre></div>
-    <details><summary>Running only this lab outside the course repository</summary><p>Install these direct packages:</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install agent-framework-core==1.15.0 agent-framework-foundry==1.11.0 azure-identity==1.25.3 python-dotenv==1.2.3 agent-framework-azure-ai-search==1.0.0b260813 azure-search-documents==12.1.0b1</code></pre></div></details>
+    <details><summary>Running only this lab outside the course repository</summary><p>Install these direct packages:</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python -m pip install agent-framework-core==1.15.0 agent-framework-openai==1.14.1 python-dotenv==1.2.3 agent-framework-azure-ai-search==1.0.0b260813 azure-search-documents==12.1.0b1 azure-identity==1.25.3</code></pre></div></details>
     <h3>Step 4 — Create the environment file</h3>
     <p>Create <code>.env</code> once from the safe template, then replace placeholders. Never commit <code>.env</code>.</p>
     <div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>Copy-Item .env.example .env
 notepad .env</code></pre></div>
-    <div class="code-shell"><div class="code-head"><span>Environment</span><button class="copy-button" type="button">Copy</button></div><pre><code>FOUNDRY_PROJECT_ENDPOINT=https://&lt;foundry-resource&gt;.services.ai.azure.com/api/projects/&lt;project&gt;
-FOUNDRY_MODEL=&lt;deployed-model-name&gt;
+    <div class="code-shell"><div class="code-head"><span>Environment</span><button class="copy-button" type="button">Copy</button></div><pre><code>AZURE_OPENAI_ENDPOINT=https://&lt;foundry-resource&gt;.openai.azure.com/openai/v1
+AZURE_OPENAI_API_KEY=&lt;instructor-provided-resource-key&gt;
+AZURE_OPENAI_DEPLOYMENT=&lt;deployed-model-name&gt;
 AZURE_SEARCH_SECURE_INDEX_NAME=travel-secure-demo
 AZURE_SEARCH_SECURE_KNOWLEDGE_SOURCE_NAME=travel-secure-source
 AZURE_SEARCH_SECURE_KNOWLEDGE_BASE_NAME=travel-secure-kb
 DEMO_FINANCE_GROUP_OBJECT_ID=&lt;optional Entra group object ID&gt;</code></pre></div>
-    <h3>Step 5 — Authenticate for classroom development</h3><p>Sign in with the identity that has access to the Foundry project and any additional Azure resources.</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>az login
+    <h3>Step 5 — Authenticate for the identity-dependent operations</h3><p>This lab includes a Foundry deployment, managed-identity, or per-user authorization operation that cannot use the shared model key.</p><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>az login
 az account show --query &quot;{subscription:name, tenant:tenantId}&quot; -o table</code></pre></div>
 
-  <h2 id="resources">Create or verify required resources</h2><ol><li>In Microsoft Foundry, create or select a project, deploy the instructor-approved chat model, and copy its project endpoint and deployment name into <code>.env</code>.</li><li>Grant the learner the project-level role required to invoke the deployment. For a shared class, provision this before the lab.</li><li>Complete Lab 20 infrastructure and role setup first.</li><li>Use stable Entra object IDs in UserIds and GroupIds; never use email addresses as ACL values.</li><li>The pinned beta SDK exposes query_source_authorization in the tested code. Current Learn examples may show x_ms_query_source_authorization; upgrade only after revalidation.</li><li>For a two-user demonstration, use a real finance group and compare a member with a nonmember.</li></ol><section class="warning"><strong>Cost and cleanup:</strong> Azure Search, models, hosted agents, storage, browser workspaces, and optimization jobs can incur charges. Use instructor-provided resources where possible and follow your organization's cleanup policy after class.</section>
+  <h2 id="resources">Create or verify required resources</h2><ol><li>Obtain the instructor-provided Azure OpenAI <code>/openai/v1</code> endpoint, resource key, and deployment name. Store them only in the git-ignored <code>.env</code>.</li><li>The shared key is for classroom model inference only. Never commit, print, screenshot, or submit it.</li><li>Complete Lab 20 infrastructure and role setup first.</li><li>Use stable Entra object IDs in UserIds and GroupIds; never use email addresses as ACL values.</li><li>The pinned beta SDK exposes query_source_authorization in the tested code. Current Learn examples may show x_ms_query_source_authorization; upgrade only after revalidation.</li><li>For a two-user demonstration, use a real finance group and compare a member with a nonmember.</li></ol><section class="warning"><strong>Cost and cleanup:</strong> Azure Search, models, hosted agents, storage, browser workspaces, and optimization jobs can incur charges. Use instructor-provided resources where possible and follow your organization's cleanup policy after class.</section>
   <h2 id="build">Build the lab in modules</h2><section class="file-build"><h3>Use case 1 — Create the ACL index</h3><p>Enable permission filters and upload user/group ACL metadata.</p><div class="file-target"><strong>Create:</strong> <code>21_identity_aware_rag/student_00_create_secure_resources.py</code></div><p>Paste the following modules into the target file in the order shown.</p><article class="step-card"><div class="step-number">1</div><div class="step-body"><h4>Import the required libraries</h4><p>Add only the SDK types used by this part of the lab.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import base64
 import csv
 import json
@@ -262,7 +263,7 @@ import os
 
 from agent_framework import Agent
 from agent_framework.azure import AzureAISearchContextProvider
-from agent_framework.foundry import FoundryChatClient
+from agent_framework.openai import OpenAIChatClient
 from azure.identity.aio import AzureCliCredential
 from dotenv import load_dotenv
 
@@ -282,10 +283,10 @@ load_dotenv()</code></pre></div></div></article><article class="step-card"><div 
         )</code></pre></div></div></article><article class="step-card"><div class="step-number">15</div><div class="step-body"><h4>Load configuration</h4><p>Read endpoints, model names, and non-secret settings from the project environment.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>        async with (
             search_provider,
             Agent(
-                client=FoundryChatClient(
-                    project_endpoint=os.environ[&quot;FOUNDRY_PROJECT_ENDPOINT&quot;],
-                    model=os.environ[&quot;FOUNDRY_MODEL&quot;],
-                    credential=credential,
+                client=OpenAIChatClient(
+                    base_url=os.environ[&quot;AZURE_OPENAI_ENDPOINT&quot;],
+                    api_key=os.environ[&quot;AZURE_OPENAI_API_KEY&quot;],
+                    model=os.environ[&quot;AZURE_OPENAI_DEPLOYMENT&quot;],
                 ),
                 name=&quot;IdentityAwareTravelAgent&quot;,
                 instructions=(

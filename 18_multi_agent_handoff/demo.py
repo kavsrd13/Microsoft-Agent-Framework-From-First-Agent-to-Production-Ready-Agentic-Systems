@@ -3,9 +3,8 @@ import os
 from typing import Annotated
 
 from agent_framework import Agent, AgentResponse, Message, tool
-from agent_framework.foundry import FoundryChatClient
+from agent_framework.openai import OpenAIChatClient
 from agent_framework.orchestrations import HandoffBuilder
-from azure.identity import AzureCliCredential
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -18,10 +17,10 @@ def check_order(order_number: Annotated[str, "Customer order number"]) -> str:
 
 
 async def main() -> None:
-    client = FoundryChatClient(
-        project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-        model=os.environ["FOUNDRY_MODEL"],
-        credential=AzureCliCredential(),
+    client = OpenAIChatClient(
+        base_url=os.environ["AZURE_OPENAI_ENDPOINT"],
+        api_key=os.environ["AZURE_OPENAI_API_KEY"],
+        model=os.environ["AZURE_OPENAI_DEPLOYMENT"],
     )
     triage = Agent(
         client=client,
@@ -66,4 +65,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

@@ -2,7 +2,7 @@ import csv
 import os
 from pathlib import Path
 
-from azure.identity import AzureCliCredential
+from azure.core.credentials import AzureKeyCredential
 from azure.core.exceptions import HttpResponseError
 from azure.search.documents import SearchClient
 from azure.search.documents.indexes import SearchIndexClient
@@ -36,7 +36,7 @@ GPT_DEPLOYMENT = os.environ["AZURE_OPENAI_DEPLOYMENT"]
 
 
 def main() -> None:
-    credential = AzureCliCredential()
+    credential = AzureKeyCredential(os.environ["AZURE_SEARCH_ADMIN_KEY"])
     index_client = SearchIndexClient(endpoint=SEARCH_ENDPOINT, credential=credential)
 
     # Documentation pattern: searchable fields plus a semantic configuration.

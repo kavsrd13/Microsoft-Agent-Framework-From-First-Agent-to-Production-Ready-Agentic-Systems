@@ -1,19 +1,19 @@
 import asyncio
 import os
 
-from agent_framework.foundry import FoundryChatClient
-from azure.identity import AzureCliCredential
+
+from agent_framework.openai import OpenAIChatClient
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
 async def main() -> None:
-    # Explicit settings make the Foundry endpoint, model, and credential visible in a classroom demo.
-    client = FoundryChatClient(
-        project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-        model=os.environ["FOUNDRY_MODEL"],
-        credential=AzureCliCredential(),
+    # Use the Azure OpenAI v1 endpoint and resource key supplied for the class.
+    client = OpenAIChatClient(
+        base_url=os.environ["AZURE_OPENAI_ENDPOINT"],
+        api_key=os.environ["AZURE_OPENAI_API_KEY"],
+        model=os.environ["AZURE_OPENAI_DEPLOYMENT"],
     )
 
     # Every supported chat client can create the standard Agent abstraction.
@@ -27,4 +27,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

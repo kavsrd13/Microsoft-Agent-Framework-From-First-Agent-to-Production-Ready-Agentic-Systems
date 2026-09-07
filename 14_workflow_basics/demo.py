@@ -2,16 +2,15 @@ import asyncio
 import os
 
 from agent_framework import Agent, step, workflow
-from agent_framework.foundry import FoundryChatClient
-from azure.identity import AzureCliCredential
+from agent_framework.openai import OpenAIChatClient
 from dotenv import load_dotenv
 
 load_dotenv()
 
-client = FoundryChatClient(
-    project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-    model=os.environ["FOUNDRY_MODEL"],
-    credential=AzureCliCredential(),
+client = OpenAIChatClient(
+    base_url=os.environ["AZURE_OPENAI_ENDPOINT"],
+    api_key=os.environ["AZURE_OPENAI_API_KEY"],
+    model=os.environ["AZURE_OPENAI_DEPLOYMENT"],
 )
 
 classifier = Agent(
@@ -53,4 +52,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

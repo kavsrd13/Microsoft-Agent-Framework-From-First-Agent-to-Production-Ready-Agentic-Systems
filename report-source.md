@@ -10,7 +10,7 @@ What is the strongest documentation-aligned teaching sequence for a Python cours
 
 - Audience: developers and solution architects who know basic Python and Azure concepts but are new to Microsoft Agent Framework.
 - Delivery: instructor-led, approximately three days. The course can be shortened by treating Modules 7 and 9 as advanced sections.
-- Runtime: Python, `FoundryChatClient`, a Microsoft Foundry project model deployment, and classroom authentication through `AzureCliCredential()` after `az login`.
+- Runtime: Python, `OpenAIChatClient`, an Azure OpenAI v1 model endpoint, and a classroom API key loaded from the git-ignored `.env`.
 - Lab code is authoritative for demonstrations. Slides must not invent code that is not present in the project.
 - The presentation is an independently authored course, not an official Microsoft deck. It should cite Microsoft Learn but must not imply Microsoft endorsement or use a Microsoft copyright footer without permission.
 
@@ -34,8 +34,8 @@ Recommended flow:
 ## Key findings to preserve in the deck
 
 - An agent combines a model/client, instructions, tools, middleware, context providers, and session state behind a consistent run interface.
-- `FoundryChatClient` is the Python path for direct inference from a Foundry project when the application owns instructions, tools, and conversation flow. `FoundryAgent` is for service-managed Prompt or Hosted Agents.
-- Microsoft Foundry authentication supports both keys and Microsoft Entra ID, but classroom demos should show `az login` plus `AzureCliCredential()`; production guidance should move to an explicitly chosen workload identity such as managed identity.
+- `OpenAIChatClient` is the classroom path for direct Azure OpenAI inference when the application owns instructions, tools, and conversation flow. `FoundryAgent` remains the path for service-managed Prompt or Hosted Agents.
+- Basic model-inference labs use the instructor-provided Azure OpenAI key. Identity-aware RAG, service-managed Prompt Agents, Hosted Agents, Toolbox, and Agent Optimizer retain Microsoft Entra authentication because API keys cannot supply user identity, RBAC, or managed-identity behavior.
 - Streaming and non-streaming use the same agent abstraction. Streaming yields updates and can be finalized into a complete response.
 - Structured output is a contract, not prompt formatting. Python uses a Pydantic model or JSON schema through `response_format`, subject to provider support.
 - Function tools are model-selected executable capabilities. Approval is a separate control that pauses execution before a sensitive call.

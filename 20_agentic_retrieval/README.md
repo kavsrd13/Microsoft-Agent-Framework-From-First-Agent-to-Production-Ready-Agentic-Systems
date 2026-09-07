@@ -2,7 +2,9 @@
 
 This lab contrasts classic semantic RAG with Azure AI Search agentic retrieval. It follows the official Python quickstart structure while using a small fictional travel-operations CSV that is easier to explain in class.
 
-Prerequisites on Azure AI Search: `Search Service Contributor`, `Search Index Data Contributor`, and `Search Index Data Reader` for the classroom identity. The Search service needs a managed identity with `Cognitive Services User` on the Foundry resource when the knowledge base uses GPT.
+Prerequisites on Azure AI Search: the instructor supplies an admin key for resource creation and a query key for retrieval. The Search service still needs a managed identity with `Cognitive Services User` on the Foundry resource when the knowledge base uses GPT.
+
+The student scripts use `AZURE_SEARCH_ADMIN_KEY` only to create the Search resources, `AZURE_SEARCH_API_KEY` for retrieval, and the shared `AZURE_OPENAI_API_KEY` for Agent Framework model inference. The instructor must configure the Search managed-identity role before class.
 
 ## Teaching order
 

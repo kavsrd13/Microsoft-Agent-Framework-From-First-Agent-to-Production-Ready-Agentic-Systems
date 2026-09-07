@@ -1,7 +1,7 @@
 import json
 import os
 
-from azure.identity import AzureCliCredential
+from azure.core.credentials import AzureKeyCredential
 from azure.search.documents.knowledgebases import KnowledgeBaseRetrievalClient
 from azure.search.documents.knowledgebases.models import (
     KnowledgeBaseMessage,
@@ -52,7 +52,7 @@ def print_result(result) -> str:
 
 
 def main() -> None:
-    credential = AzureCliCredential()
+    credential = AzureKeyCredential(os.environ["AZURE_SEARCH_API_KEY"])
     client = KnowledgeBaseRetrievalClient(
         endpoint=os.environ["AZURE_SEARCH_ENDPOINT"],
         knowledge_base_name=os.environ["AZURE_SEARCH_AGENTIC_KNOWLEDGE_BASE_NAME"],

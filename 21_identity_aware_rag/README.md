@@ -18,6 +18,8 @@ Prerequisites on Azure AI Search: `Search Service Contributor`, `Search Index Da
 
 The third gate must run before retrieved text reaches Foundry. Prompt instructions are not access control. ACL fields are `retrievable=False` so principal identifiers are not exposed in grounding or citations.
 
+The Agent Framework model call uses the shared Azure OpenAI API key. This lab still requires Microsoft Entra sign-in for the Search-scoped end-user token because an API key cannot represent an individual user's object ID or group membership.
+
 For a two-user classroom demonstration, set `DEMO_FINANCE_GROUP_OBJECT_ID` to a real Entra group object ID, rerun setup, and compare a group member's `az login` session with a nonmember. Never put email addresses in ACL fields; Microsoft requires stable Entra object IDs.
 
 ## Official sources

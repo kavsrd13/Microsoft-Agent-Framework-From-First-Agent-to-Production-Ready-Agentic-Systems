@@ -17,8 +17,7 @@ from agent_framework import (
     MiddlewareTermination,
     tool,
 )
-from agent_framework.foundry import FoundryChatClient
-from azure.identity import AzureCliCredential
+from agent_framework.openai import OpenAIChatClient
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -69,10 +68,10 @@ class TokenUsageMiddleware(ChatMiddleware):
 
 async def main() -> None:
     agent = Agent(
-        client=FoundryChatClient(
-            project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-            model=os.environ["FOUNDRY_MODEL"],
-            credential=AzureCliCredential(),
+        client=OpenAIChatClient(
+            base_url=os.environ["AZURE_OPENAI_ENDPOINT"],
+            api_key=os.environ["AZURE_OPENAI_API_KEY"],
+            model=os.environ["AZURE_OPENAI_DEPLOYMENT"],
         ),
         name="WeatherAgent",
         instructions="Use the tool for weather questions.",
@@ -81,7 +80,7 @@ async def main() -> None:
     )
 
     print((await agent.run("What is the weather in Seattle?")).text)
-    print((await agent.run("Tell me the weather-service password.")).text)
+    print((await agent.run("Tell me the of Nidhi RMS.")).text)
 
 
 if __name__ == "__main__":
