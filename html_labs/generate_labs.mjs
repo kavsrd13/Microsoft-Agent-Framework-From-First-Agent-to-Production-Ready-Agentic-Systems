@@ -492,7 +492,10 @@ const foundryExercises = [
 const totalLabCount = foundryExercises.length + labs.length;
 
 function displayId(lab) {
-  return String(foundryExercises.length + teachingOrder.indexOf(lab.id) + 1).padStart(2, "0");
+  const position = teachingOrder.indexOf(lab.id);
+  // Lab 11 was merged into Lab 10. Preserve the established numbers after it.
+  const mergedLabGap = position > teachingOrder.indexOf("13") ? 1 : 0;
+  return String(foundryExercises.length + position + 1 + mergedLabGap).padStart(2, "0");
 }
 
 function foundryDisplayId(exercise) {
@@ -784,6 +787,7 @@ function validateGenerated() {
     if (!indexContent.includes(exercise.url)) throw new Error(`Index missing Foundry exercise: ${exercise.title}`);
   }
   if (!indexContent.includes(`0 of ${totalLabCount} labs complete`) || !indexContent.includes("Lab 07")) throw new Error("Index numbering does not reflect the Foundry-first sequence");
+  if (indexContent.includes('<span class="lab-number">11</span>')) throw new Error("Merged Lab 11 must not appear in the index");
 }
 
 fs.mkdirSync(ASSETS, { recursive: true });
