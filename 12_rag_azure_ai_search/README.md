@@ -1,9 +1,10 @@
 # RAG with Azure AI Search
 
-Attaches `AzureAISearchContextProvider` in semantic mode so relevant Search documents are retrieved before the Foundry model answers. Configure `AZURE_SEARCH_ENDPOINT` and `AZURE_SEARCH_INDEX_NAME`; leave `AZURE_SEARCH_API_KEY` empty to use the signed-in Azure CLI identity.
+This lab has two parts:
 
-Run `setup_search.py` first to create a small semantic index and upload three fictional travel documents. The signed-in
-identity needs `Search Service Contributor`, `Search Index Data Contributor`, and `Search Index Data Reader` on the
-Search service. Then run `demo.py` to retrieve that content through the Agent Framework context provider.
+1. Complete Microsoft's [Create a knowledge mining solution](https://go.microsoft.com/fwlink/?linkid=2320469) exercise. Keep the Search service and semantic index named `margies-index` for Part B.
+2. Run `demo.py` to attach `AzureAISearchContextProvider` in semantic mode so the Agent Framework agent retrieves relevant travel content before the Foundry model answers.
 
-Sources: [Adding context providers](https://learn.microsoft.com/en-us/agent-framework/journey/adding-context-providers), [Azure AI Search context provider API](https://learn.microsoft.com/en-us/python/api/agent-framework-core/agent_framework.azure.azureaisearchcontextprovider?view=agent-framework-python-latest), [official Search sample](https://github.com/microsoft/agent-framework/blob/main/python/samples/02-agents/context_providers/azure_ai_search/search_context_semantic.py).
+Configure `AZURE_SEARCH_ENDPOINT`, `AZURE_SEARCH_INDEX_NAME=margies-index`, and `AZURE_SEARCH_API_KEY` with the query key recorded in Part A. `AzureCliCredential` authenticates the Foundry model client after `az login`.
+
+Sources: [Azure AI Search context provider](https://learn.microsoft.com/en-us/agent-framework/integrations/by-component/context-providers/azure-ai-search), [Azure AI Search context provider API](https://learn.microsoft.com/en-us/python/api/agent-framework-core/agent_framework.azure.azureaisearchcontextprovider?view=agent-framework-python-latest).

@@ -147,26 +147,40 @@ const labs = [
     knowledge: { concept: "Evaluation measures agent behavior against repeatable criteria rather than a single impressive response.", setup: "Define both the queries and the evaluators before reviewing results.", outcome: "The terminal shows named checks and their pass/fail results for every case." },
   },
   {
-    id: "12", slug: "classic-rag", folder: "12_rag_azure_ai_search", title: "Build Classic RAG with Azure AI Search",
-    phase: "Phase 4 · RAG progression", level: "300", duration: "75 min", resource: "Foundry + Azure AI Search",
-    why: "Classic RAG retrieves relevant documents before a model answers, reducing unsupported responses and connecting answers to enterprise knowledge.",
-    objectives: ["Create and populate a semantic Search index", "Attach AzureAISearchContextProvider", "Verify grounded and unanswerable questions"],
-    concepts: [["Retrieval", "Finds relevant indexed documents for a query."], ["Context provider", "Injects retrieved passages before the model call."], ["Grounding rule", "Requires the answer to stay within retrieved evidence."]],
+    id: "12", slug: "classic-rag", folder: "12_rag_azure_ai_search", title: "Build RAG from Azure AI Search to Agent Framework",
+    phase: "Phase 2 · Tools, state, and memory", level: "300", duration: "45 min", resource: "Foundry + Azure AI Search",
+    why: "This two-part lab first builds a knowledge-mining index with the official Microsoft exercise, then reuses that index to ground a Microsoft Agent Framework agent.",
+    objectives: ["Build and test the official Margie's Travel knowledge-mining index", "Attach AzureAISearchContextProvider to the existing index", "Verify that the agent answers from retrieved travel content"],
+    concepts: [["Knowledge mining", "Enriches source documents and creates searchable fields in an Azure AI Search index."], ["Retrieval", "Finds relevant indexed documents for a user question."], ["Context provider", "Injects retrieved passages before the model call."], ["Grounding rule", "Requires the answer to stay within retrieved evidence."]],
     packages: SEARCH, needsFoundry: true,
-    env: ["AZURE_SEARCH_ENDPOINT=https://<search-service>.search.windows.net", "AZURE_SEARCH_INDEX_NAME=travel-classic-demo", "AZURE_SEARCH_API_KEY="],
-    resources: ["Create an Azure AI Search service (Basic is recommended for the later agentic labs).", "Enable RBAC and assign the learner Search Service Contributor, Search Index Data Contributor, and Search Index Data Reader.", "The setup script creates the index and uploads three fictional travel documents."],
-    resourceCommands: [
-      { label: "Create a Search service (replace placeholders)", code: "$resourceGroup = \"maf-course-rg\"\n$location = \"eastus\"\n$searchService = \"<globally-unique-search-name>\"\naz group create --name $resourceGroup --location $location\naz search service create --name $searchService --resource-group $resourceGroup --sku basic --partition-count 1 --replica-count 1 --identity-type SystemAssigned" },
-      { label: "Assign the three learner roles", code: "$searchId = az search service show --name $searchService --resource-group $resourceGroup --query id -o tsv\n$userId = az ad signed-in-user show --query id -o tsv\naz role assignment create --assignee-object-id $userId --assignee-principal-type User --role \"Search Service Contributor\" --scope $searchId\naz role assignment create --assignee-object-id $userId --assignee-principal-type User --role \"Search Index Data Contributor\" --scope $searchId\naz role assignment create --assignee-object-id $userId --assignee-principal-type User --role \"Search Index Data Reader\" --scope $searchId" },
+    env: ["AZURE_SEARCH_ENDPOINT=https://<search-service>.search.windows.net", "AZURE_SEARCH_INDEX_NAME=margies-index", "AZURE_SEARCH_API_KEY=<query-key-from-part-a>"],
+    resources: ["Complete Part A before starting the Agent Framework code.", "Reuse the Azure AI Search endpoint, query key, and margies-index created in Part A.", "Use a Foundry project and deployed chat model that the signed-in learner can invoke."],
+    officialExercise: {
+      url: "https://go.microsoft.com/fwlink/?linkid=2320469",
+      title: "Create a knowledge mining solution",
+      links: [
+        { label: "Download the travel brochure documents", url: "https://github.com/microsoftlearning/mslearn-ai-information-extraction/raw/main/Labfiles/knowledge/documents.zip" },
+        { label: "Microsoft exercise source repository", url: "https://github.com/microsoftlearning/mslearn-ai-information-extraction" },
+      ],
+      sections: [
+        { title: "1. Create the Azure resources", items: ["Sign in to the Azure portal and create or select a resource group.", "Create an Azure AI Search service. Use a unique service name and the Free tier for this exercise.", "Create a Storage account in the same resource group and region. Use Standard performance and locally redundant storage.", "Wait for both deployments to finish before continuing."] },
+        { title: "2. Upload the travel brochures", items: ["Download and extract the supplied travel brochure archive.", "Open Storage browser in the storage account and create a blob container named documents.", "Keep anonymous access disabled so the container remains private.", "Upload all extracted PDF files into the documents container."] },
+        { title: "3. Build the enriched Search index", items: ["Open the Search service and start Import data.", "Choose Azure Blob Storage as the data source, select keyword search, and connect to the documents container.", "Enable phrase extraction, entity extraction for people and locations, and text extraction from images with tags and categories.", "Use the free Foundry Tools enrichment option. It is limited to 20 documents and is intended only for this exercise.", "Review the field mappings. Keep metadata_storage_size retrievable, filterable, and sortable; keep metadata_storage_last_modified retrievable, filterable, and sortable; make title retrievable, filterable, sortable, and searchable; and make locations, persons, and keyPhrases retrievable, filterable, and searchable.", "In Advanced settings, enable semantic ranker and run the indexer once.", "Use margies-index as the object-name prefix, create the objects, and wait until margies-index-indexer reports Success."] },
+        { title: "4. Explore the index", items: ["Open Search explorer and run an all-documents query. Confirm that the response contains document metadata and enriched fields.", "Return only title and locations and inspect how enrichment added locations.", "Search for New York and return title plus keyPhrases.", "Repeat the New York search with a file-size filter below 380000 bytes and compare the result count."] },
+        { title: "5. Run the official Python search client", items: ["From the Search service, record the service URL and a query key.", "Clone the Microsoft exercise repository and open Labfiles/04-knowledge-mining in VS Code.", "Create and activate the exercise virtual environment, then install its requirements.", "Update the exercise .env with the Search endpoint, query key, and margies-index.", "Review search-app.py, noting how SearchClient reads configuration, accepts repeated queries, selects enriched fields, and orders results by title.", "Run the client and test London and flights. Enter quit when finished."] },
+        { title: "6. Preserve the resources for Part B", items: ["Do not delete the resource group yet; Part B uses the same Search service and index.", "The current official exercise intentionally omits knowledge-store steps.", "Keep the Search endpoint, query key, and margies-index available for the Agent Framework .env file."] },
+      ],
+    },
+    documentationLinks: [
+      { label: "Official Microsoft knowledge-mining exercise", url: "https://go.microsoft.com/fwlink/?linkid=2320469" },
+      { label: "Azure AI Search context provider", url: "https://learn.microsoft.com/en-us/agent-framework/integrations/by-component/context-providers/azure-ai-search" },
+      { label: "AzureAISearchContextProvider API", url: "https://learn.microsoft.com/en-us/python/api/agent-framework-core/agent_framework.azure.azureaisearchcontextprovider?view=agent-framework-python-latest" },
     ],
-    files: [
-      { source: "12_rag_azure_ai_search/setup_search.py", target: "12_rag_azure_ai_search/student_setup_search.py", label: "Use case 1 — Create the Search index", purpose: "Define a semantic schema and upload the fictional grounding documents." },
-      { source: "12_rag_azure_ai_search/demo.py", target: "12_rag_azure_ai_search/student_lab.py", label: "Use case 2 — Ground an Agent", purpose: "Retrieve semantic matches through an Agent Framework context provider." },
-    ],
-    run: ["python .\\12_rag_azure_ai_search\\student_setup_search.py", "python .\\12_rag_azure_ai_search\\student_lab.py"],
-    expected: ["The setup script confirms three uploaded documents.", "The agent summarizes only information retrieved from the configured index."],
-    challenge: "Ask one question answered by the three documents and one unrelated question; confirm that the agent admits insufficient context.",
-    knowledge: { concept: "Classic RAG retrieves top matching documents and injects them before the model answers.", setup: "Populate the semantic index and grant the signed-in learner Search data-plane roles.", outcome: "The agent answers from retrieved travel documents and refuses unsupported questions." },
+    files: [{ source: "12_rag_azure_ai_search/demo.py", target: "12_rag_azure_ai_search/student_lab.py", label: "Part B — Ground an Agent Framework agent", purpose: "Retrieve semantic matches from margies-index through AzureAISearchContextProvider." }],
+    run: ["python .\\12_rag_azure_ai_search\\student_lab.py"],
+    expected: ["The context provider searches margies-index before the model is invoked.", "The agent answers from the retrieved travel-brochure content or clearly says that the index does not contain the answer."],
+    challenge: "Change the question to London, then ask an unrelated question and compare the grounded and not-found responses.",
+    knowledge: { concept: "Classic RAG retrieves top matching documents and injects them before the model answers.", setup: "Create margies-index in the official exercise, enable semantic ranker, and reuse its endpoint and query key in Part B.", outcome: "The Agent Framework agent answers from the retrieved travel-brochure content and refuses unsupported questions." },
   },
   {
     id: "13", slug: "mcp", folder: "13_mcp", title: "Build and Inspect an MCP Server",
@@ -287,7 +301,7 @@ const labs = [
     knowledge: { concept: "Group chat lets several agents iteratively improve work in one shared transcript.", setup: "Use a deterministic selector and a strict termination condition for a classroom demo.", outcome: "The transcript shows bounded, multi-round contributions from expert, verifier, and clarifier." },
   },
   {
-    id: "20", slug: "agentic-retrieval", folder: "20_agentic_retrieval", title: "Compare Classic and Agentic Retrieval",
+    id: "20", slug: "agentic-retrieval", folder: "20_agentic_retrieval", title: "Compare Classic and Agentic Retrieval", optional: true,
     phase: "Phase 4 · RAG progression", level: "400", duration: "110 min", resource: "Foundry + Azure AI Search Basic",
     why: "Agentic retrieval can decompose a compound or conversational question into focused searches, merge results, synthesize an answer, and expose its retrieval activity and references.",
     objectives: ["Create an index, knowledge source, and knowledge base", "Compare classic semantic retrieval with agentic retrieval", "Inspect activity, references, and conversational follow-up"],
@@ -309,7 +323,7 @@ const labs = [
     knowledge: { concept: "Agentic retrieval plans multiple focused searches and can synthesize a grounded conversational answer.", setup: "Create the Search knowledge resources and grant the Search managed identity access to the Foundry model.", outcome: "The result exposes retrieval activity and references in addition to the synthesized answer." },
   },
   {
-    id: "21", slug: "identity-aware-rag", folder: "21_identity_aware_rag", title: "Enforce Identity-aware RAG",
+    id: "21", slug: "identity-aware-rag", folder: "21_identity_aware_rag", title: "Enforce Identity-aware RAG", optional: true,
     phase: "Phase 4 · RAG progression", level: "400", duration: "120 min", resource: "Foundry + Search ACL preview",
     why: "Identity-aware RAG filters documents inside Azure AI Search before grounding reaches the model. Prompt instructions alone cannot enforce document authorization.",
     objectives: ["Create permission-filter fields and upload ACL metadata", "Pass a Search-scoped end-user token at query time", "Prove allowed and denied retrieval paths"],
@@ -432,29 +446,35 @@ const labs = [
   },
 ];
 
-// Keep the two source projects, but teach them as one end-to-end MCP lab.
-const mcpServer = labs.find((lab) => lab.id === "13");
-const mcpClient = labs.find((lab) => lab.id === "27");
-const mcpServerPart = { ...mcpServer };
-Object.assign(mcpServer, {
-  title: "Build, Inspect, and Use an MCP Server with Agent Framework",
-  duration: "125 min",
-  resource: "MCP Inspector + Agent Framework + shared Azure MCP",
-  why: "Build a small MCP server, inspect its capabilities, then connect an Agent Framework agent to the instructor's authenticated Azure server and verify its tool-backed answer.",
-  needsFoundry: true,
-  packages: `${mcpClient.packages} uvicorn==0.52.4`,
-  objectives: [...mcpServer.objectives, ...mcpClient.objectives],
-  concepts: [...mcpServer.concepts, ...mcpClient.concepts],
-  resources: [...mcpServer.resources, "Use the same configured model as earlier agent labs for Part B. Reuse the virtual environment and .env from Part A."],
-  documentationLinks: [...mcpServer.documentationLinks, { label: "Agent Framework MCP tools", url: "https://learn.microsoft.com/agent-framework/agents/tools/local-mcp-tools" }],
-  knowledge: {
-    concept: "The MCP server publishes capabilities; Inspector tests them directly; Agent Framework lets the model select and call the allowed tools.",
-    setup: "Reuse one environment, pass X-API-Key to the shared MCP endpoint, and configure model authentication separately from MCP authentication.",
-    outcome: "Local Inspector reports score 8/high; the shared server and agent report score 100/high for CHG-1003 because these are different teaching datasets.",
-  },
-});
-labs.splice(labs.indexOf(mcpClient), 1);
-const teachingOrder = ["00", "03", "04", "13", "06", "07", "08", "09", "10", "11", "22", "12", "20", "21", "14", "15", "16", "17", "18", "19", "23", "24", "25", "26"];
+// Teach only the client side of MCP. The instructor supplies the deployed server.
+const mcpServerIndex = labs.findIndex((lab) => lab.id === "13");
+const mcpClientIndex = labs.findIndex((lab) => lab.id === "27");
+labs[mcpServerIndex] = {
+  ...labs[mcpClientIndex],
+  id: "13",
+  slug: "mcp",
+  title: "Use a Deployed MCP Server from Agent Framework",
+  duration: "50 min",
+  resource: "Foundry + deployed Azure Container Apps MCP",
+  why: "Learners connect an Agent Framework agent to the instructor-provided Contoso Change Risk Advisor instead of building or deploying another MCP server.",
+  env: [
+    "MCP_SERVER_NAME=Contoso Change Risk Advisor",
+    "MCP_SERVER_URL=https://ca-copilot-dev-e925.redpond-16f6bb64.centralindia.azurecontainerapps.io/mcp",
+    "MCP_API_KEY=<instructor-provided-api-key>",
+  ],
+  resources: [
+    "Use the instructor-provided Contoso Change Risk Advisor deployment; do not create an MCP server or Azure Container App.",
+    "The MCP endpoint is https://ca-copilot-dev-e925.redpond-16f6bb64.centralindia.azurecontainerapps.io/mcp.",
+    "Authentication uses the X-API-Key request header. Store the supplied key only in the git-ignored .env file.",
+    "Use the same Foundry project and deployed model as the earlier agent labs.",
+  ],
+  documentationLinks: [
+    { label: "Use MCP tools with Agent Framework", url: "https://learn.microsoft.com/en-us/agent-framework/agents/tools/local-mcp-tools" },
+    { label: "Microsoft Foundry model provider", url: "https://learn.microsoft.com/en-us/agent-framework/agents/providers/microsoft-foundry" },
+  ],
+};
+labs.splice(mcpClientIndex, 1);
+const teachingOrder = ["00", "03", "04", "12", "13", "06", "07", "08", "09", "10", "11", "22", "20", "21", "14", "15", "16", "17", "18", "19", "23", "24", "25", "26"];
 
 const foundryExercises = [
   {
@@ -493,9 +513,7 @@ const totalLabCount = foundryExercises.length + labs.length;
 
 function displayId(lab) {
   const position = teachingOrder.indexOf(lab.id);
-  // Lab 11 was merged into Lab 10. Preserve the established numbers after it.
-  const mergedLabGap = position > teachingOrder.indexOf("13") ? 1 : 0;
-  return String(foundryExercises.length + position + 1 + mergedLabGap).padStart(2, "0");
+  return String(foundryExercises.length + position + 1).padStart(2, "0");
 }
 
 function foundryDisplayId(exercise) {
@@ -696,6 +714,20 @@ function renderSources(lab) {
   return `<h2 id="sources">Microsoft documentation and sample references</h2><ul>${readLinks(lab).map((item) => `<li><a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">${escapeHtml(item.label)}</a></li>`).join("")}</ul><section class="notice"><strong>Version boundary:</strong> The lab code uses the versions pinned in the root <code>requirements.txt</code>. Preview documentation can move ahead of those packages, so upgrade only after rerunning the validation suite.</section>`;
 }
 
+function renderOfficialExercise(lab) {
+  if (!lab.officialExercise) return "";
+  const links = lab.officialExercise.links.map((item) => `<li><a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">${escapeHtml(item.label)}</a></li>`).join("");
+  const sections = lab.officialExercise.sections.map((section, sectionIndex) => `<section class="file-build"><h3>${escapeHtml(section.title)}</h3><ol>${section.items.map((item, itemIndex) => `<li><label><input type="checkbox" data-progress="${lab.id}-official-${sectionIndex}-${itemIndex}"> ${escapeHtml(item)}</label></li>`).join("")}</ol></section>`).join("");
+  return `<h2 id="official-part">Part A — Complete the official Microsoft exercise</h2>
+    <p>The workflow below is an independently written, participant-ready adaptation of the Microsoft exercise. Keep the official page open for screenshots, current portal labels, and any service updates.</p>
+    <p><a class="start-button" href="${escapeHtml(lab.officialExercise.url)}" target="_blank" rel="noreferrer">Open official exercise ↗</a></p>
+    <h3>Exercise files</h3><ul>${links}</ul>
+    ${sections}
+    <section class="checkpoint"><strong>Handoff to Part B:</strong> Keep the Azure AI Search resource and <code>margies-index</code>. Do not delete the resource group at the end of the official exercise until this complete Lab 19 is finished.</section>
+    <h2 id="agent-framework-part">Part B — Use the index from Microsoft Agent Framework</h2>
+    <p>Return to this repository. The remaining steps create a small Agent Framework client that retrieves from the index you just built before the Foundry model answers.</p>`;
+}
+
 function page(lab, sources) {
   const current = teachingOrder.indexOf(lab.id);
   const previous = current > 0 ? labs.find((item) => item.id === teachingOrder[current - 1]) : null;
@@ -706,19 +738,20 @@ function page(lab, sources) {
   const conceptRows = lab.concepts.map(([name, description]) => `<tr><td><strong>${escapeHtml(name)}</strong></td><td>${escapeHtml(description)}</td></tr>`).join("");
   return `<!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab ${displayId(lab)} — ${escapeHtml(lab.title)}</title><link rel="stylesheet" href="assets/lab.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${lab.optional ? "Optional " : ""}Lab ${displayId(lab)} — ${escapeHtml(lab.title)}</title><link rel="stylesheet" href="assets/lab.css"></head>
 <body data-lab-id="${lab.id}">
 <main class="exercise">
-  <header class="lab-header"><a class="back-link" href="index.html">← Course lab index</a><h1>Lab ${displayId(lab)}: ${escapeHtml(lab.title)}</h1><p class="lab-header-desc">${escapeHtml(lab.why)}</p><div class="lab-header-meta"><span class="lab-meta-pill">Level ${lab.level}</span><span class="lab-meta-pill">${lab.duration}</span><span class="lab-meta-pill">${escapeHtml(agentFrameworkPhase(lab.phase))}</span><span class="lab-meta-pill">${escapeHtml(lab.resource)}</span></div></header>
-  <nav class="page-nav" aria-label="Lab sections"><a href="#details">Details</a><a href="#readiness">Setup</a><a href="#resources">Resources</a>${lab.id === "13" ? '<a href="#server-part">Part A: Server</a><a href="#client-part">Part B: Agent client</a>' : '<a href="#build">Build</a><a href="#run">Validate</a>'}<a href="#knowledge-check">Knowledge check</a></nav>
+  <header class="lab-header"><a class="back-link" href="index.html">← Course lab index</a><h1>${lab.optional ? "Optional " : ""}Lab ${displayId(lab)}: ${escapeHtml(lab.title)}</h1><p class="lab-header-desc">${escapeHtml(lab.why)}</p><div class="lab-header-meta">${lab.optional ? '<span class="lab-meta-pill">Optional extension</span>' : ""}<span class="lab-meta-pill">Level ${lab.level}</span><span class="lab-meta-pill">${lab.duration}</span><span class="lab-meta-pill">${escapeHtml(agentFrameworkPhase(lab.phase))}</span><span class="lab-meta-pill">${escapeHtml(lab.resource)}</span></div></header>
+  <nav class="page-nav" aria-label="Lab sections"><a href="#details">Details</a>${lab.officialExercise ? '<a href="#official-part">Part A: Microsoft exercise</a><a href="#agent-framework-part">Part B: Agent Framework</a>' : ""}<a href="#readiness">Setup</a><a href="#resources">Resources</a><a href="#build">Build</a><a href="#run">Validate</a><a href="#knowledge-check">Knowledge check</a></nav>
   <h2 id="details">Lab details</h2>
   <table><thead><tr><th>Level</th><th>Persona</th><th>Duration</th><th>Primary resource</th></tr></thead><tbody><tr><td>${lab.level}</td><td>Python developer / solution architect</td><td>${lab.duration}</td><td>${escapeHtml(lab.resource)}</td></tr></tbody></table>
   <h2>Why this matters</h2><p>${escapeHtml(lab.why)}</p>
   <h2>Learning objectives</h2><ul>${lab.objectives.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
   <h2>Core concepts</h2><table><thead><tr><th>Concept</th><th>What it means in this lab</th></tr></thead><tbody>${conceptRows}</tbody></table>
+  ${renderOfficialExercise(lab)}
   ${commonSetup(lab)}
   ${renderResources(lab)}
-  ${lab.id === "13" ? renderMcpParts() : renderFiles(lab, sources) + renderRun(lab)}
+  ${renderFiles(lab, sources) + renderRun(lab)}
   ${renderKnowledge(lab)}
   <h2>Summary of learning</h2><ul>${lab.objectives.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
   ${renderSources(lab)}
@@ -727,23 +760,12 @@ function page(lab, sources) {
 </main><script src="assets/lab.js"></script></body></html>`;
 }
 
-function renderMcpParts() {
-  const partB = (renderFiles(mcpClient, readSources(mcpClient)) + renderRun(mcpClient))
-    .replaceAll('id="build"', 'id="client-build"').replaceAll('id="run"', 'id="client-run"');
-  return `<h2 id="server-part">Part A — Build and inspect the MCP server</h2>
-    ${renderFiles(mcpServerPart, readSources(mcpServerPart))}${renderRun(mcpServerPart)}
-    <h2 id="client-part">Part B — Use the authenticated server from Agent Framework</h2>
-    <p>Continue in the same activated environment and repository root. Keep the same .env; do not copy the template again. Use the shared HTTPS endpoint and X-API-Key tested in Part A.</p>
-    <section class="notice"><strong>Compare the right datasets.</strong> The local teaching server returns score 8/high for CHG-1003. The shared Azure server returns score 100/high. Part B uses the shared server; compare its answer with the remote Inspector result, not the local score.</section>
-    ${partB}`;
-}
-
 function indexPage() {
   const phases = [...new Set(teachingOrder.map((id) => labs.find((lab) => lab.id === id).phase))];
   const foundryCards = foundryExercises.map((exercise) => `<article class="lab-card external-lab"><div class="card-top"><span class="lab-number">${foundryDisplayId(exercise)}</span><label class="index-check"><input type="checkbox" data-lab-complete="${exercise.id}"> Complete</label></div><h3>${escapeHtml(exercise.title)}</h3><p>${escapeHtml(exercise.why)}</p><div class="card-meta"><span>Level ${exercise.level}</span><span>${exercise.duration}</span><span>${escapeHtml(exercise.resource)}</span></div><a class="start-button" href="${escapeHtml(exercise.url)}" target="_blank" rel="noreferrer">Lab link ↗</a></article>`).join("");
   const sections = phases.map((phase) => {
     const phaseLabs = teachingOrder.map((id) => labs.find((lab) => lab.id === id)).filter((lab) => lab.phase === phase);
-    return `<section class="phase"><h2>${escapeHtml(agentFrameworkPhase(phase))}</h2><div class="lab-grid">${phaseLabs.map((lab) => `<article class="lab-card"><div class="card-top"><span class="lab-number">${displayId(lab)}</span><label class="index-check"><input type="checkbox" data-lab-complete="${lab.id}"> Complete</label></div><h3><a href="${slugFile(lab)}">${escapeHtml(lab.title)}</a></h3><p>${escapeHtml(lab.why)}</p><div class="card-meta"><span>Level ${lab.level}</span><span>${lab.duration}</span><span>${escapeHtml(lab.resource)}</span></div><a class="start-button" href="${slugFile(lab)}">Open lab →</a></article>`).join("")}</div></section>`;
+    return `<section class="phase"><h2>${escapeHtml(agentFrameworkPhase(phase))}</h2><div class="lab-grid">${phaseLabs.map((lab) => `<article class="lab-card${lab.optional ? " optional-lab" : ""}"><div class="card-top"><span class="lab-number">${displayId(lab)}</span><label class="index-check"><input type="checkbox" data-lab-complete="${lab.id}"> Complete</label></div>${lab.optional ? '<span class="optional-badge">Optional advanced lab</span>' : ""}<h3><a href="${slugFile(lab)}">${escapeHtml(lab.title)}</a></h3><p>${escapeHtml(lab.why)}</p><div class="card-meta"><span>Level ${lab.level}</span><span>${lab.duration}</span><span>${escapeHtml(lab.resource)}</span></div><a class="start-button" href="${slugFile(lab)}">Open lab →</a></article>`).join("")}</div></section>`;
   }).join("");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Microsoft Foundry and Agent Framework course labs</title><link rel="stylesheet" href="assets/lab.css"></head><body><main class="index-shell"><header class="course-header"><p class="eyebrow">Hands-on Microsoft AI course</p><h1>Microsoft Foundry and Agent Framework: From Foundations to Production-Ready Agentic Systems</h1><p>${totalLabCount} labs in one learning path: ${foundryExercises.length} official Microsoft Foundry exercises followed by ${labs.length} documentation-aligned Microsoft Agent Framework labs.</p><div class="progress-panel"><div><strong id="progress-count">0 of ${totalLabCount} labs complete</strong><span>Progress is stored only in this browser.</span></div><div class="progress-track"><div id="progress-bar"></div></div></div></header><section class="index-readiness"><h2>Before Lab 01</h2><ol><li>Install Python, Azure CLI, Node.js, Git, and VS Code.</li><li>Use an Azure subscription in which you can create Foundry resources and deploy models.</li><li>For Labs 01–06, follow the linked official Microsoft exercise and its stated prerequisites.</li><li>Before Lab 07, clone or extract this repository and obtain the Foundry project endpoint, deployed model name, and required Azure roles from the instructor.</li></ol><p><a href="../README.md">Project README</a> · <a href="../.env.example">Environment template</a> · <a href="../requirements.txt">Pinned requirements</a></p></section><section class="phase foundry-phase"><h2>Microsoft Foundry foundations · Labs 01–06</h2><p class="phase-intro">These links open the current Microsoft-hosted exercises in a new tab. Complete them in order, then return here to begin Microsoft Agent Framework at Lab 07.</p><div class="lab-grid">${foundryCards}</div></section><section class="notice transition"><strong>Transition to Agent Framework:</strong> You have now created a Foundry project, explored and evaluated models, built model applications with the Responses API and tools, reviewed content safety, and created an agent through the portal and VS Code. The remaining labs use those foundations to build agents in Python with Microsoft Agent Framework.</section>${sections}<footer>Labs 01–06 link directly to Microsoft-hosted exercise instructions. The Agent Framework workbook is independently authored training material with references to Microsoft Learn documentation and official samples.</footer></main><script src="assets/lab.js"></script></body></html>`;
 }
@@ -751,6 +773,7 @@ function indexPage() {
 const css = `
 :root{color-scheme:light;--ink:#1f2937;--heading:#172554;--line:#d8dee8;--soft:#f5f7fb;--accent:#4f46e5;--accent2:#0369a1;--success:#087f5b;--warning:#9a6700;--danger:#b42318}
 *{box-sizing:border-box}html{background:#eef2f7;scroll-behavior:smooth}body{margin:0;background:#eef2f7;color:var(--ink);font:16.5px/1.62 "Segoe UI",Arial,sans-serif}.exercise,.index-shell{width:min(1180px,calc(100% - 32px));margin:28px auto;padding:42px 50px 58px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 36px rgba(15,23,42,.08)}.lab-header,.course-header{margin:-42px -50px 34px;padding:34px 50px;color:#fff;background:linear-gradient(120deg,#312e81,#4f46e5 58%,#0369a1);border-radius:16px 16px 0 0}.lab-header h1,.course-header h1{margin:.35rem 0 .7rem;color:#fff;font-size:clamp(2rem,4vw,3rem);line-height:1.12}.lab-header-desc,.course-header>p{max-width:90ch;color:#eef2ff}.back-link{color:#fff;text-decoration:none}.lab-header-meta,.card-meta{display:flex;flex-wrap:wrap;gap:.55rem}.lab-meta-pill,.card-meta span{display:inline-block;padding:.28rem .65rem;border:1px solid rgba(255,255,255,.42);border-radius:999px;background:rgba(255,255,255,.14);font-size:.86rem}.page-nav{position:sticky;top:0;z-index:5;display:flex;gap:.4rem;overflow:auto;margin:0 -10px;padding:10px;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line)}.page-nav a{white-space:nowrap;padding:.4rem .65rem;color:#3730a3;text-decoration:none;border-radius:8px}.page-nav a:hover{background:#eeecff}h2,h3,h4{color:var(--heading);line-height:1.25}h2{margin:2.7rem 0 1rem;padding-bottom:.4rem;border-bottom:2px solid #e9e7ff;font-size:1.65rem}h3{margin-top:2rem;font-size:1.3rem}h4{margin:.15rem 0 .5rem;font-size:1.08rem}p,li{max-width:95ch}li+li{margin-top:.35rem}a{color:#3730a3}table{width:100%;margin:1.25rem 0;border-collapse:collapse;display:block;overflow-x:auto}th,td{padding:.7rem .85rem;border:1px solid var(--line);text-align:left;vertical-align:top}th{background:#eeecff;color:#2e2a72}.notice,.warning,.checkpoint{margin:1.3rem 0;padding:.9rem 1.1rem;border-left:5px solid var(--accent);background:#f0efff;border-radius:0 10px 10px 0}.warning{border-color:#d69e00;background:#fff7d6}.checkpoint{border-color:var(--success);background:#e9f8f1}.checklist{list-style:none;padding:0}.checklist label{display:block;padding:.55rem .7rem;background:var(--soft);border:1px solid var(--line);border-radius:8px}.code-shell{max-width:100%;margin:1rem 0;border-radius:10px;overflow:hidden;background:#111827}.code-head{display:flex;justify-content:space-between;align-items:center;padding:.45rem .7rem;color:#cbd5e1;background:#1f2937;font-size:.78rem}.copy-button{padding:.28rem .6rem;color:#fff;background:#4f46e5;border:0;border-radius:6px;cursor:pointer}.copy-button.copied{background:var(--success)}pre{max-width:100%;margin:0;overflow:auto;padding:1rem 1.1rem;color:#f8fafc;background:#111827;line-height:1.48}code{font-family:"Cascadia Code",Consolas,monospace;font-size:.9em;background:#eef1f6;padding:.12rem .3rem;border-radius:4px;overflow-wrap:anywhere}pre code{background:transparent;padding:0}.file-build{min-width:0;margin:2rem 0;padding:1.2rem;border:1px solid var(--line);border-radius:14px;background:#fbfcff}.file-target{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center;padding:.7rem;background:#eef2ff;border-radius:8px}.step-card{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;margin:1rem 0;padding:1rem;border:1px solid var(--line);border-radius:12px;background:#fff}.step-body{min-width:0}.step-number,.question-number,.lab-number{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;color:#fff;background:var(--accent);font-weight:700}.question{display:grid;grid-template-columns:46px minmax(0,1fr);gap:14px;margin:1rem 0;padding:1.1rem;background:#f3f4f6;border-radius:14px}.question h3{margin:.1rem 0 .8rem}.option{display:flex;gap:.6rem;margin:.45rem 0;padding:.55rem .65rem;background:#fff;border:1px solid var(--line);border-radius:8px}.option.correct{border-color:var(--success);background:#e9f8f1}.option.incorrect{border-color:var(--danger);background:#fff0ef}.check-answer{margin-top:.6rem;padding:.45rem .8rem;color:#fff;background:var(--accent);border:0;border-radius:7px;cursor:pointer}.answer-feedback{font-weight:650}.completion{margin:2.2rem 0;padding:1rem;background:#e9f8f1;border:1px solid #95d5bd;border-radius:12px}.lab-pager{display:flex;justify-content:space-between;gap:1rem;margin-top:2rem;padding-top:1.2rem;border-top:1px solid var(--line)}.lab-pager a{max-width:48%;padding:.7rem 1rem;text-decoration:none;background:#eeecff;border-radius:9px}.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-weight:700}.progress-panel{margin-top:1.3rem;padding:1rem;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:12px}.progress-panel>div:first-child{display:flex;justify-content:space-between;gap:1rem}.progress-track{height:10px;margin-top:.7rem;background:rgba(255,255,255,.25);border-radius:99px;overflow:hidden}.progress-track div{width:0;height:100%;background:#a7f3d0}.index-readiness{padding:1.2rem;border:1px solid var(--line);border-radius:14px;background:#fbfcff}.phase{margin-top:2.7rem}.phase-intro{margin:-.25rem 0 1.25rem;color:#475467}.lab-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.lab-card{display:flex;flex-direction:column;padding:1.1rem;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,.05)}.external-lab{border-top:4px solid var(--accent2)}.transition{margin-top:2.7rem}.card-top{display:flex;justify-content:space-between}.index-check{font-size:.85rem}.lab-card h3{margin:.8rem 0 .4rem}.lab-card p{font-size:.92rem}.card-meta span{color:#374151;background:#f3f4f6;border-color:#e5e7eb}.start-button{align-self:flex-start;margin-top:auto;padding:.55rem .8rem;color:#fff;background:var(--accent);text-decoration:none;border-radius:8px}footer{margin-top:3rem;padding-top:1.2rem;color:#667085;border-top:1px solid var(--line);font-size:.85rem}
+.optional-lab{border-top:4px solid var(--warning);background:#fffdf5}.optional-badge{align-self:flex-start;margin-top:.7rem;padding:.18rem .55rem;color:#7a5200;background:#fff1b8;border:1px solid #e7c65b;border-radius:999px;font-size:.78rem;font-weight:700}
 @media(max-width:760px){.exercise,.index-shell{width:100%;margin:0;padding:28px 20px;border-radius:0}.lab-header,.course-header{margin:-28px -20px 28px;padding:28px 20px;border-radius:0}.lab-grid{grid-template-columns:1fr}.step-card,.question{grid-template-columns:1fr}.page-nav{position:static}.lab-pager{flex-direction:column}.lab-pager a{max-width:100%}.progress-panel>div:first-child{flex-direction:column}}
 @media print{html,body{background:#fff}.exercise{width:100%;margin:0;padding:0;border:0;box-shadow:none}.lab-header{margin:0 0 24px;padding:20px 0;color:#111;background:#fff;border-bottom:3px solid var(--accent);border-radius:0}.lab-header h1,.lab-header-desc,.back-link{color:#111}.page-nav,.copy-button,.completion,.lab-pager{display:none}.step-card,.question,pre,table{break-inside:avoid}}
 `;
@@ -787,7 +810,7 @@ function validateGenerated() {
     if (!indexContent.includes(exercise.url)) throw new Error(`Index missing Foundry exercise: ${exercise.title}`);
   }
   if (!indexContent.includes(`0 of ${totalLabCount} labs complete`) || !indexContent.includes("Lab 07")) throw new Error("Index numbering does not reflect the Foundry-first sequence");
-  if (indexContent.includes('<span class="lab-number">11</span>')) throw new Error("Merged Lab 11 must not appear in the index");
+  if (!indexContent.includes('<span class="lab-number">10</span>') || !indexContent.includes('<span class="lab-number">11</span>')) throw new Error("Index must contain the reordered Labs 10 and 11");
 }
 
 fs.mkdirSync(ASSETS, { recursive: true });
@@ -800,7 +823,8 @@ for (const name of fs.readdirSync(OUT)) {
 fs.writeFileSync(path.join(ASSETS, "lab.css"), css.trimStart(), "utf8");
 fs.writeFileSync(path.join(ASSETS, "lab.js"), js.trimStart(), "utf8");
 // A focused merge preserves hand-edited content in other published labs.
-const mergeOnly = process.argv.includes("--merge-mcp");
+const mergeOnly = process.argv.includes("--merge-mcp") || process.argv.includes("--focused-update");
+const focusedLabs = new Set(["12", "13", "20", "21"]);
 const oldNumbers = new Map();
 if (mergeOnly) {
   for (const lab of labs) {
@@ -812,7 +836,7 @@ if (mergeOnly) {
 for (const lab of labs) {
   const file = path.join(OUT, slugFile(lab));
   let content;
-  if (mergeOnly && lab.id !== "13") {
+  if (mergeOnly && !focusedLabs.has(lab.id)) {
     content = fs.readFileSync(file, "utf8").replace(/Lab (\d{2})\b/g, (match, n) => `Lab ${oldNumbers.get(n) || n}`);
     const generated = page(lab, []);
     content = content.replace(/<nav class="lab-pager">[\s\S]*?<\/nav>/, generated.match(/<nav class="lab-pager">[\s\S]*?<\/nav>/)[0]);
@@ -821,7 +845,7 @@ for (const lab of labs) {
   }
   fs.writeFileSync(file, content, "utf8");
 }
-fs.writeFileSync(path.join(OUT, "27-mcp-agent-client.html"), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=13-mcp.html#client-part"><title>MCP client exercise moved to Lab 10</title></head><body><p>This exercise is now Part B of Lab 10. <a href="13-mcp.html#client-part">Open the combined MCP lab</a>.</p></body></html>`, "utf8");
+fs.writeFileSync(path.join(OUT, "27-mcp-agent-client.html"), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=13-mcp.html"><title>MCP client exercise moved to Lab 11</title></head><body><p>This exercise is now Lab 11. <a href="13-mcp.html">Open the authenticated MCP client lab</a>.</p></body></html>`, "utf8");
 fs.writeFileSync(path.join(OUT, "index.html"), cleanGeneratedHtml(indexPage()), "utf8");
 validateGenerated();
 console.log(`Generated ${labs.length} labs plus index.html in ${OUT}`);

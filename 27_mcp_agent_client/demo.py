@@ -23,7 +23,7 @@ async def main() -> None:
 
         async with (
             MCPStreamableHTTPTool(
-                name=os.getenv("MCP_SERVER_NAME", "Contoso Change Risk Advisor"),
+                name=os.environ["MCP_SERVER_NAME"],
                 url=os.environ["MCP_SERVER_URL"],
                 header_provider=lambda _context: {"X-API-Key": api_key},
                 load_prompts=False,

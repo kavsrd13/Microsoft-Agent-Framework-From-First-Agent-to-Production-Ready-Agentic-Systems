@@ -6,7 +6,7 @@ Add the values supplied by the instructor to `.env`:
 
 ```text
 MCP_SERVER_NAME=Contoso Change Risk Advisor
-MCP_SERVER_URL=https://<instructor-provided-hostname>/mcp
+MCP_SERVER_URL=https://ca-copilot-dev-e925.redpond-16f6bb64.centralindia.azurecontainerapps.io/mcp
 MCP_API_KEY=<instructor-provided-api-key>
 ```
 

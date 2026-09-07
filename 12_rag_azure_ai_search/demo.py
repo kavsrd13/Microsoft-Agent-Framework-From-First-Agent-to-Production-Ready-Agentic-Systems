@@ -40,10 +40,9 @@ async def main() -> None:
                 context_providers=[search_provider],
             ) as agent,
         ):
-            result = await agent.run("Summarize the main topics in the knowledge base.")
+            result = await agent.run("hotels in Dubai")
             print(result.text)
 
 
 if __name__ == "__main__":
     asyncio.run(main())
-
