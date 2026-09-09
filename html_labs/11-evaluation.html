@@ -257,7 +257,407 @@ async def main() -&gt; None:
 
 
 if __name__ == &quot;__main__&quot;:
-    asyncio.run(main())</code></pre></div></div></article></section><h3>Supplied supporting files</h3><p>These files are already part of the repository. Inspect or reuse them rather than retyping them.</p><ul><li><a href="../11_evaluation/eval_dashboard.html" target="_blank"><code>11_evaluation/eval_dashboard.html</code></a></li></ul><h2 id="run">Run and validate</h2><h3>Run the completed files</h3><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python .\11_evaluation\student_lab.py
+    asyncio.run(main())</code></pre></div></div></article></section><h3>Supplied supporting files</h3><p>All required text materials are embedded below, so the lab works from a local HTML file and from GitHub Pages without relying on a separate download link.</p><details class="embedded-material"><summary><code>11_evaluation/eval_dashboard.html</code></summary><p>This material is included in this page. Review it here, then download a copy only if you need a local file.</p><p><button type="button" class="download-material" data-material-id="material-11-evaluation-eval-dashboard-html" data-file-name="eval_dashboard.html">Download a copy</button></p><textarea id="material-11-evaluation-eval-dashboard-html" class="material-source" hidden>&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+  &lt;meta charset=&quot;utf-8&quot;&gt;
+  &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+  &lt;title&gt;Agent Evaluation Dashboard&lt;/title&gt;
+  &lt;style&gt;
+    :root {
+      --bg: #f6f8fc;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #5d6b83;
+      --border: #dce3ef;
+      --ok: #14804a;
+      --bad: #b11f3b;
+      --accent: #0f62fe;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #eef3ff 0%, var(--bg) 35%);
+      color: var(--text);
+      font-family: &quot;Segoe UI&quot;, Tahoma, sans-serif;
+    }
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 24px auto 40px;
+    }
+    h1 { margin: 0 0 6px; }
+    .muted { color: var(--muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 12px;
+      margin: 16px 0 18px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 4px 14px rgba(32, 52, 89, 0.06);
+    }
+    .value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .provider-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+    .pill {
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--ok);
+    }
+    .pill.bad { background: var(--bad); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    th, td {
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      padding: 8px;
+      vertical-align: top;
+    }
+    th { color: var(--muted); }
+    .score {
+      display: inline-block;
+      margin: 2px 8px 2px 0;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+    }
+    .score.ok { color: var(--ok); border-color: #bde5cf; background: #eefaf3; }
+    .score.bad { color: var(--bad); border-color: #f2c0cb; background: #fff1f4; }
+    .error {
+      border-left: 4px solid #ff8f1f;
+      background: #fff7eb;
+      padding: 10px;
+      border-radius: 6px;
+      color: #7e4a0c;
+      margin-bottom: 10px;
+      white-space: pre-wrap;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+    }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;main&gt;
+    &lt;h1&gt;Agent Evaluation Dashboard&lt;/h1&gt;
+    &lt;div class=&quot;muted&quot; id=&quot;timestamp&quot;&gt;Loading...&lt;/div&gt;
+
+    &lt;section class=&quot;grid&quot; id=&quot;summary&quot;&gt;&lt;/section&gt;
+    &lt;div id=&quot;foundry-error&quot;&gt;&lt;/div&gt;
+    &lt;section id=&quot;providers&quot;&gt;&lt;/section&gt;
+  &lt;/main&gt;
+
+  &lt;script&gt;
+    async function loadData() {
+      const response = await fetch('./eval_results.json', { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error('Could not load eval_results.json. Run demo.py first.');
+      }
+      return response.json();
+    }
+
+    function summaryCard(label, value) {
+      return `&lt;article class=&quot;card&quot;&gt;&lt;div class=&quot;muted&quot;&gt;${label}&lt;/div&gt;&lt;div class=&quot;value&quot;&gt;${value}&lt;/div&gt;&lt;/article&gt;`;
+    }
+
+    function renderSummary(data) {
+      const summary = document.getElementById('summary');
+      const s = data.summary || {};
+      summary.innerHTML = [
+        summaryCard('Providers', s.providers ?? 0),
+        summaryCard('Passed Checks', `${s.passed ?? 0}/${s.total ?? 0}`),
+        summaryCard('Pass Rate', `${s.pass_rate ?? 0}%`),
+        summaryCard('Generated', new Date(data.generated_at).toLocaleTimeString())
+      ].join('');
+      document.getElementById('timestamp').textContent = `Generated at ${new Date(data.generated_at).toLocaleString()}`;
+
+      if (s.foundry_error) {
+        document.getElementById('foundry-error').innerHTML =
+          `&lt;div class=&quot;error&quot;&gt;&lt;strong&gt;Foundry evaluator warning:&lt;/strong&gt; ${s.foundry_error}&lt;/div&gt;`;
+      }
+    }
+
+    function renderProvider(provider) {
+      const statusClass = provider.all_passed ? 'pill' : 'pill bad';
+      const perEval = (provider.per_evaluator || []).map(p =&gt;
+        `&lt;tr&gt;&lt;td&gt;${p.name}&lt;/td&gt;&lt;td&gt;${p.passed}/${p.total}&lt;/td&gt;&lt;/tr&gt;`
+      ).join('');
+
+      const items = (provider.items || []).map(item =&gt; {
+        const scoreBad = item.scores.some(s =&gt; !s.passed);
+        const scores = item.scores.map(s =&gt;
+          `&lt;span class=&quot;score ${s.passed ? 'ok' : 'bad'}&quot;&gt;${s.name}: ${s.passed ? 'PASS' : 'FAIL'}&lt;/span&gt;`
+        ).join('');
+        return `&lt;tr&gt;
+          &lt;td&gt;${item.query || ''}&lt;/td&gt;
+          &lt;td&gt;${item.response || ''}&lt;/td&gt;
+          &lt;td&gt;&lt;span class=&quot;${scoreBad ? 'score bad' : 'score ok'}&quot;&gt;${item.status}&lt;/span&gt;&lt;/td&gt;
+          &lt;td&gt;${scores}&lt;/td&gt;
+        &lt;/tr&gt;`;
+      }).join('');
+
+      const reportLink = provider.report_url
+        ? `&lt;div class=&quot;muted&quot;&gt;Portal: &lt;a href=&quot;${provider.report_url}&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;Open Foundry report&lt;/a&gt;&lt;/div&gt;`
+        : '';
+
+      return `&lt;article class=&quot;panel&quot;&gt;
+        &lt;div class=&quot;provider-header&quot;&gt;
+          &lt;h2&gt;${provider.provider}&lt;/h2&gt;
+          &lt;span class=&quot;${statusClass}&quot;&gt;${provider.passed}/${provider.total} passed&lt;/span&gt;
+        &lt;/div&gt;
+        ${reportLink}
+        ${(provider.per_evaluator || []).length ? `&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Evaluator&lt;/th&gt;&lt;th&gt;Pass&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;${perEval}&lt;/tbody&gt;&lt;/table&gt;` : ''}
+        &lt;table&gt;
+          &lt;thead&gt;&lt;tr&gt;&lt;th&gt;Query&lt;/th&gt;&lt;th&gt;Response&lt;/th&gt;&lt;th&gt;Status&lt;/th&gt;&lt;th&gt;Checks&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
+          &lt;tbody&gt;${items}&lt;/tbody&gt;
+        &lt;/table&gt;
+      &lt;/article&gt;`;
+    }
+
+    async function main() {
+      try {
+        const data = await loadData();
+        renderSummary(data);
+        const providers = document.getElementById('providers');
+        providers.innerHTML = (data.providers || []).map(renderProvider).join('');
+      } catch (err) {
+        document.body.innerHTML = `&lt;main&gt;&lt;h1&gt;Agent Evaluation Dashboard&lt;/h1&gt;&lt;div class=&quot;error&quot;&gt;${err.message}&lt;/div&gt;&lt;/main&gt;`;
+      }
+    }
+
+    main();
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</textarea><div class="code-shell"><div class="code-head"><span>HTML</span><button class="copy-button" type="button">Copy</button></div><pre><code>&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+  &lt;meta charset=&quot;utf-8&quot;&gt;
+  &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+  &lt;title&gt;Agent Evaluation Dashboard&lt;/title&gt;
+  &lt;style&gt;
+    :root {
+      --bg: #f6f8fc;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #5d6b83;
+      --border: #dce3ef;
+      --ok: #14804a;
+      --bad: #b11f3b;
+      --accent: #0f62fe;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #eef3ff 0%, var(--bg) 35%);
+      color: var(--text);
+      font-family: &quot;Segoe UI&quot;, Tahoma, sans-serif;
+    }
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 24px auto 40px;
+    }
+    h1 { margin: 0 0 6px; }
+    .muted { color: var(--muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 12px;
+      margin: 16px 0 18px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 4px 14px rgba(32, 52, 89, 0.06);
+    }
+    .value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .provider-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+    .pill {
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--ok);
+    }
+    .pill.bad { background: var(--bad); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    th, td {
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      padding: 8px;
+      vertical-align: top;
+    }
+    th { color: var(--muted); }
+    .score {
+      display: inline-block;
+      margin: 2px 8px 2px 0;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+    }
+    .score.ok { color: var(--ok); border-color: #bde5cf; background: #eefaf3; }
+    .score.bad { color: var(--bad); border-color: #f2c0cb; background: #fff1f4; }
+    .error {
+      border-left: 4px solid #ff8f1f;
+      background: #fff7eb;
+      padding: 10px;
+      border-radius: 6px;
+      color: #7e4a0c;
+      margin-bottom: 10px;
+      white-space: pre-wrap;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+    }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;main&gt;
+    &lt;h1&gt;Agent Evaluation Dashboard&lt;/h1&gt;
+    &lt;div class=&quot;muted&quot; id=&quot;timestamp&quot;&gt;Loading...&lt;/div&gt;
+
+    &lt;section class=&quot;grid&quot; id=&quot;summary&quot;&gt;&lt;/section&gt;
+    &lt;div id=&quot;foundry-error&quot;&gt;&lt;/div&gt;
+    &lt;section id=&quot;providers&quot;&gt;&lt;/section&gt;
+  &lt;/main&gt;
+
+  &lt;script&gt;
+    async function loadData() {
+      const response = await fetch('./eval_results.json', { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error('Could not load eval_results.json. Run demo.py first.');
+      }
+      return response.json();
+    }
+
+    function summaryCard(label, value) {
+      return `&lt;article class=&quot;card&quot;&gt;&lt;div class=&quot;muted&quot;&gt;${label}&lt;/div&gt;&lt;div class=&quot;value&quot;&gt;${value}&lt;/div&gt;&lt;/article&gt;`;
+    }
+
+    function renderSummary(data) {
+      const summary = document.getElementById('summary');
+      const s = data.summary || {};
+      summary.innerHTML = [
+        summaryCard('Providers', s.providers ?? 0),
+        summaryCard('Passed Checks', `${s.passed ?? 0}/${s.total ?? 0}`),
+        summaryCard('Pass Rate', `${s.pass_rate ?? 0}%`),
+        summaryCard('Generated', new Date(data.generated_at).toLocaleTimeString())
+      ].join('');
+      document.getElementById('timestamp').textContent = `Generated at ${new Date(data.generated_at).toLocaleString()}`;
+
+      if (s.foundry_error) {
+        document.getElementById('foundry-error').innerHTML =
+          `&lt;div class=&quot;error&quot;&gt;&lt;strong&gt;Foundry evaluator warning:&lt;/strong&gt; ${s.foundry_error}&lt;/div&gt;`;
+      }
+    }
+
+    function renderProvider(provider) {
+      const statusClass = provider.all_passed ? 'pill' : 'pill bad';
+      const perEval = (provider.per_evaluator || []).map(p =&gt;
+        `&lt;tr&gt;&lt;td&gt;${p.name}&lt;/td&gt;&lt;td&gt;${p.passed}/${p.total}&lt;/td&gt;&lt;/tr&gt;`
+      ).join('');
+
+      const items = (provider.items || []).map(item =&gt; {
+        const scoreBad = item.scores.some(s =&gt; !s.passed);
+        const scores = item.scores.map(s =&gt;
+          `&lt;span class=&quot;score ${s.passed ? 'ok' : 'bad'}&quot;&gt;${s.name}: ${s.passed ? 'PASS' : 'FAIL'}&lt;/span&gt;`
+        ).join('');
+        return `&lt;tr&gt;
+          &lt;td&gt;${item.query || ''}&lt;/td&gt;
+          &lt;td&gt;${item.response || ''}&lt;/td&gt;
+          &lt;td&gt;&lt;span class=&quot;${scoreBad ? 'score bad' : 'score ok'}&quot;&gt;${item.status}&lt;/span&gt;&lt;/td&gt;
+          &lt;td&gt;${scores}&lt;/td&gt;
+        &lt;/tr&gt;`;
+      }).join('');
+
+      const reportLink = provider.report_url
+        ? `&lt;div class=&quot;muted&quot;&gt;Portal: &lt;a href=&quot;${provider.report_url}&quot; target=&quot;_blank&quot; rel=&quot;noreferrer&quot;&gt;Open Foundry report&lt;/a&gt;&lt;/div&gt;`
+        : '';
+
+      return `&lt;article class=&quot;panel&quot;&gt;
+        &lt;div class=&quot;provider-header&quot;&gt;
+          &lt;h2&gt;${provider.provider}&lt;/h2&gt;
+          &lt;span class=&quot;${statusClass}&quot;&gt;${provider.passed}/${provider.total} passed&lt;/span&gt;
+        &lt;/div&gt;
+        ${reportLink}
+        ${(provider.per_evaluator || []).length ? `&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Evaluator&lt;/th&gt;&lt;th&gt;Pass&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;${perEval}&lt;/tbody&gt;&lt;/table&gt;` : ''}
+        &lt;table&gt;
+          &lt;thead&gt;&lt;tr&gt;&lt;th&gt;Query&lt;/th&gt;&lt;th&gt;Response&lt;/th&gt;&lt;th&gt;Status&lt;/th&gt;&lt;th&gt;Checks&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
+          &lt;tbody&gt;${items}&lt;/tbody&gt;
+        &lt;/table&gt;
+      &lt;/article&gt;`;
+    }
+
+    async function main() {
+      try {
+        const data = await loadData();
+        renderSummary(data);
+        const providers = document.getElementById('providers');
+        providers.innerHTML = (data.providers || []).map(renderProvider).join('');
+      } catch (err) {
+        document.body.innerHTML = `&lt;main&gt;&lt;h1&gt;Agent Evaluation Dashboard&lt;/h1&gt;&lt;div class=&quot;error&quot;&gt;${err.message}&lt;/div&gt;&lt;/main&gt;`;
+      }
+    }
+
+    main();
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre></div></details><h2 id="run">Run and validate</h2><h3>Run the completed files</h3><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python .\11_evaluation\student_lab.py
 start .\11_evaluation\eval_dashboard.html</code></pre></div><h3>Expected result</h3><ul><li>The terminal prints provider, pass count, and each named evaluator result.</li><li>eval_results.json contains the measured cases and scores.</li><li>The dashboard shows summary cards and per-query PASS/FAIL details.</li></ul><section class="checkpoint"><strong>Completion checkpoint:</strong> Do not mark the lab complete until the observed output matches these conditions.</section><h3>Five-minute challenge</h3><p>Add one adversarial question and a corresponding evaluator rule, rerun the suite, and compare the pass rate.</p>
   <h2 id="knowledge-check">Knowledge check</h2><div class="knowledge-list"><section class="question" data-answer="1"><div class="question-number">1</div><div class="question-body"><h3>Which statement best describes the central concept in Lab 17?</h3><label class="option"><input type="radio" name="11-q0" value="0"><span>It automatically deploys every Azure resource without configuration.</span></label><label class="option"><input type="radio" name="11-q0" value="1"><span>Evaluation measures agent behavior against repeatable criteria rather than a single impressive response.</span></label><label class="option"><input type="radio" name="11-q0" value="2"><span>It removes the need for model authentication and authorization.</span></label><label class="option"><input type="radio" name="11-q0" value="3"><span>It stores provider credentials directly in Python source.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="1"><div class="question-number">2</div><div class="question-body"><h3>Which setup choice matches this lab?</h3><label class="option"><input type="radio" name="11-q1" value="0"><span>Use real customer data before validating the classroom scenario.</span></label><label class="option"><input type="radio" name="11-q1" value="1"><span>Define queries, expected outputs, expected tool calls, and evaluators before reviewing results.</span></label><label class="option"><input type="radio" name="11-q1" value="2"><span>Hard-code every credential so the code is self-contained.</span></label><label class="option"><input type="radio" name="11-q1" value="3"><span>Skip role assignments because successful sign-in grants every permission.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="1"><div class="question-number">3</div><div class="question-body"><h3>What evidence proves that the lab worked?</h3><label class="option"><input type="radio" name="11-q2" value="0"><span>The model returned any fluent answer, regardless of the expected behavior.</span></label><label class="option"><input type="radio" name="11-q2" value="1"><span>The terminal and dashboard show named checks and pass/fail evidence for every case.</span></label><label class="option"><input type="radio" name="11-q2" value="2"><span>The Python file exists, even if it was not run.</span></label><label class="option"><input type="radio" name="11-q2" value="3"><span>The script compiled, but its output was not inspected.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section></div>
   <h2>Summary of learning</h2><ul><li>Define repeatable travel-policy evaluation cases</li><li>Combine built-in and custom local evaluators</li><li>Export structured results and inspect them in an HTML dashboard</li></ul>

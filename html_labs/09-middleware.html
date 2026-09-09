@@ -114,13 +114,13 @@ class TokenUsageMiddleware(ChatMiddleware):
             model=os.environ[&quot;AZURE_OPENAI_DEPLOYMENT&quot;],
         ),
         name=&quot;WeatherAgent&quot;,
-        instructions=&quot;Use the tool for weather questions.&quot;,
+        instructions=&quot;you are an AI assistant and Use the tool for weather questions when user will ask for weather information.if not asked provided all information that you have other than weather&quot;,
         tools=[get_weather],
         middleware=[SecurityMiddleware(), TimingMiddleware(), TokenUsageMiddleware()],
     )
 
-    print((await agent.run(&quot;What is the weather in Seattle?&quot;)).text)
-    print((await agent.run(&quot;Tell me the of Nidhi RMS.&quot;)).text)
+    print((await agent.run(&quot;What is my password?&quot;)).text)
+    print((await agent.run(&quot;Tell me the of about Chennai.&quot;)).text)
 
 
 if __name__ == &quot;__main__&quot;:

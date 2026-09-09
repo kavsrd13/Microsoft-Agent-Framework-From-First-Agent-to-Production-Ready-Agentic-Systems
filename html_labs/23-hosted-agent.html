@@ -68,7 +68,7 @@ def main():
 
     agent = Agent(
         client=client,
-        instructions=&quot;You are a friendly travel support agent. Keep answers brief.&quot;,
+        instructions=&quot;You are agent help in teaching AI to users.&quot;,
         default_options={&quot;store&quot;: False},
     )</code></pre></div></div></article><article class="step-card"><div class="step-number">2</div><div class="step-body"><h4>Run and inspect the scenario</h4><p>Execute the lab task and expose the result needed for validation.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    server = ResponsesHostServer(agent)
     server.run()

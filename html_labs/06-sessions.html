@@ -67,9 +67,17 @@ async def main() -&gt; None:
     )
 
     session = agent.create_session()
-    first = await agent.run(&quot;My name is Alice and I love hiking.&quot;, session=session)
-    print(f&quot;Agent: {first.text}&quot;)</code></pre></div></div></article><article class="step-card"><div class="step-number">2</div><div class="step-body"><h4>Run and inspect the scenario</h4><p>Execute the lab task and expose the result needed for validation.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    second = await agent.run(&quot;What do you remember about me?&quot;, session=session)
-    print(f&quot;Agent: {second.text}&quot;)
+    print(&quot;Type a message. Enter 'exit' or 'quit' to end the session.&quot;)</code></pre></div></div></article><article class="step-card"><div class="step-number">2</div><div class="step-body"><h4>Run and inspect the scenario</h4><p>Execute the lab task and expose the result needed for validation.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    while True:
+        user_message = (await asyncio.to_thread(input, &quot;You: &quot;)).strip()
+        if user_message.lower() in {&quot;exit&quot;, &quot;quit&quot;}:
+            break
+        if not user_message:
+            continue
+
+        result = await agent.run(user_message, session=session)
+        print(f&quot;Agent: {result.text}&quot;)
+        conversation = session.to_dict()
+        print(f&quot;Serialized session: {conversation}&quot;)
 
 
 

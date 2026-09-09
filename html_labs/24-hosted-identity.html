@@ -132,7 +132,179 @@ CMD [&quot;python&quot;, &quot;main.py&quot;]</code></pre></div></div></article>
 agent-framework-foundry-hosting&gt;=1.0.0a260630
 azure-identity&gt;=1.25.3
 azure-storage-blob&gt;=12.30.0
-python-dotenv&gt;=1.0.1</code></pre></div></div></article></section><h3>Supplied supporting files</h3><p>These files are already part of the repository. Inspect or reuse them rather than retyping them.</p><ul><li><a href="../24_hosted_agent_identity/sample_travel_policy.txt" target="_blank"><code>24_hosted_agent_identity/sample_travel_policy.txt</code></a></li><li><a href="../24_hosted_agent_identity/lab/starter.py" target="_blank"><code>24_hosted_agent_identity/lab/starter.py</code></a></li><li><a href="../24_hosted_agent_identity/lab/solution.py" target="_blank"><code>24_hosted_agent_identity/lab/solution.py</code></a></li></ul><h2 id="run">Run and validate</h2><h3>Run the completed files</h3><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>cd .\24_hosted_agent_identity
+python-dotenv&gt;=1.0.1</code></pre></div></div></article></section><h3>Supplied supporting files</h3><p>All required text materials are embedded below, so the lab works from a local HTML file and from GitHub Pages without relying on a separate download link.</p><details class="embedded-material"><summary><code>24_hosted_agent_identity/sample_travel_policy.txt</code></summary><p>This material is included in this page. Review it here, then download a copy only if you need a local file.</p><p><button type="button" class="download-material" data-material-id="material-24-hosted-agent-identity-sample-travel-policy-txt" data-file-name="sample_travel_policy.txt">Download a copy</button></p><textarea id="material-24-hosted-agent-identity-sample-travel-policy-txt" class="material-source" hidden>Contoso Travel Policy
+
+Employees must book economy class for flights under six hours.
+Hotel reimbursement is limited to 150 USD per night before taxes.
+Receipts are required for expenses above 25 USD.
+Exceptions require approval from the employee's manager before booking.
+
+</textarea><div class="code-shell"><div class="code-head"><span>Text</span><button class="copy-button" type="button">Copy</button></div><pre><code>Contoso Travel Policy
+
+Employees must book economy class for flights under six hours.
+Hotel reimbursement is limited to 150 USD per night before taxes.
+Receipts are required for expenses above 25 USD.
+Exceptions require approval from the employee's manager before booking.
+
+</code></pre></div></details><details class="embedded-material"><summary><code>24_hosted_agent_identity/lab/starter.py</code></summary><p>This material is included in this page. Review it here, then download a copy only if you need a local file.</p><p><button type="button" class="download-material" data-material-id="material-24-hosted-agent-identity-lab-starter-py" data-file-name="starter.py">Download a copy</button></p><textarea id="material-24-hosted-agent-identity-lab-starter-py" class="material-source" hidden>import os
+from pathlib import Path
+
+from agent_framework import Agent
+from agent_framework.foundry import FoundryChatClient, ResponsesHostServer
+from azure.identity import DefaultAzureCredential
+from azure.storage.blob import BlobClient
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[2] / &quot;.env&quot;)
+credential = DefaultAzureCredential()
+
+
+def read_travel_policy() -&gt; str:
+    # TODO: Create BlobClient with credential=credential and return the Blob text.
+    return &quot;&quot;
+
+
+def main():
+    client = FoundryChatClient(
+        project_endpoint=os.environ[&quot;FOUNDRY_PROJECT_ENDPOINT&quot;],
+        model=os.environ[&quot;FOUNDRY_MODEL&quot;],
+        credential=credential,
+    )
+
+    agent = Agent(
+        client=client,
+        instructions=&quot;Call read_travel_policy before answering a policy question.&quot;,
+        tools=[read_travel_policy],
+        default_options={&quot;store&quot;: False},
+    )
+
+    ResponsesHostServer(agent).run()
+
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</textarea><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import os
+from pathlib import Path
+
+from agent_framework import Agent
+from agent_framework.foundry import FoundryChatClient, ResponsesHostServer
+from azure.identity import DefaultAzureCredential
+from azure.storage.blob import BlobClient
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[2] / &quot;.env&quot;)
+credential = DefaultAzureCredential()
+
+
+def read_travel_policy() -&gt; str:
+    # TODO: Create BlobClient with credential=credential and return the Blob text.
+    return &quot;&quot;
+
+
+def main():
+    client = FoundryChatClient(
+        project_endpoint=os.environ[&quot;FOUNDRY_PROJECT_ENDPOINT&quot;],
+        model=os.environ[&quot;FOUNDRY_MODEL&quot;],
+        credential=credential,
+    )
+
+    agent = Agent(
+        client=client,
+        instructions=&quot;Call read_travel_policy before answering a policy question.&quot;,
+        tools=[read_travel_policy],
+        default_options={&quot;store&quot;: False},
+    )
+
+    ResponsesHostServer(agent).run()
+
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</code></pre></div></details><details class="embedded-material"><summary><code>24_hosted_agent_identity/lab/solution.py</code></summary><p>This material is included in this page. Review it here, then download a copy only if you need a local file.</p><p><button type="button" class="download-material" data-material-id="material-24-hosted-agent-identity-lab-solution-py" data-file-name="solution.py">Download a copy</button></p><textarea id="material-24-hosted-agent-identity-lab-solution-py" class="material-source" hidden>import os
+from pathlib import Path
+
+from agent_framework import Agent
+from agent_framework.foundry import FoundryChatClient, ResponsesHostServer
+from azure.identity import DefaultAzureCredential
+from azure.storage.blob import BlobClient
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[2] / &quot;.env&quot;)
+credential = DefaultAzureCredential()
+
+
+def read_travel_policy() -&gt; str:
+    blob = BlobClient(
+        account_url=os.environ[&quot;AZURE_STORAGE_ACCOUNT_URL&quot;],
+        container_name=os.environ[&quot;AZURE_STORAGE_CONTAINER_NAME&quot;],
+        blob_name=os.environ[&quot;AZURE_STORAGE_BLOB_NAME&quot;],
+        credential=credential,
+    )
+    return blob.download_blob().readall().decode(&quot;utf-8&quot;)
+
+
+def main():
+    client = FoundryChatClient(
+        project_endpoint=os.environ[&quot;FOUNDRY_PROJECT_ENDPOINT&quot;],
+        model=os.environ[&quot;FOUNDRY_MODEL&quot;],
+        credential=credential,
+    )
+
+    agent = Agent(
+        client=client,
+        instructions=&quot;Call read_travel_policy before answering a policy question.&quot;,
+        tools=[read_travel_policy],
+        default_options={&quot;store&quot;: False},
+    )
+
+    ResponsesHostServer(agent).run()
+
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</textarea><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import os
+from pathlib import Path
+
+from agent_framework import Agent
+from agent_framework.foundry import FoundryChatClient, ResponsesHostServer
+from azure.identity import DefaultAzureCredential
+from azure.storage.blob import BlobClient
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[2] / &quot;.env&quot;)
+credential = DefaultAzureCredential()
+
+
+def read_travel_policy() -&gt; str:
+    blob = BlobClient(
+        account_url=os.environ[&quot;AZURE_STORAGE_ACCOUNT_URL&quot;],
+        container_name=os.environ[&quot;AZURE_STORAGE_CONTAINER_NAME&quot;],
+        blob_name=os.environ[&quot;AZURE_STORAGE_BLOB_NAME&quot;],
+        credential=credential,
+    )
+    return blob.download_blob().readall().decode(&quot;utf-8&quot;)
+
+
+def main():
+    client = FoundryChatClient(
+        project_endpoint=os.environ[&quot;FOUNDRY_PROJECT_ENDPOINT&quot;],
+        model=os.environ[&quot;FOUNDRY_MODEL&quot;],
+        credential=credential,
+    )
+
+    agent = Agent(
+        client=client,
+        instructions=&quot;Call read_travel_policy before answering a policy question.&quot;,
+        tools=[read_travel_policy],
+        default_options={&quot;store&quot;: False},
+    )
+
+    ResponsesHostServer(agent).run()
+
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</code></pre></div></details><h2 id="run">Run and validate</h2><h3>Run the completed files</h3><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>cd .\24_hosted_agent_identity
 ..\venv\Scripts\python.exe .\student_main.py
 # Stop the local server with Ctrl+C</code></pre></div><h3>Expected result</h3><ul><li>The local Responses host starts on port 8088.</li><li>A policy question triggers read_travel_policy and succeeds only when the current identity has Blob read permission.</li></ul><section class="checkpoint"><strong>Completion checkpoint:</strong> Do not mark the lab complete until the observed output matches these conditions.</section><h3>Five-minute challenge</h3><p>Remove the reader role, repeat the request, and explain why successful authentication does not imply authorization.</p>
   <h2 id="knowledge-check">Knowledge check</h2><div class="knowledge-list"><section class="question" data-answer="0"><div class="question-number">1</div><div class="question-body"><h3>Which statement best describes the central concept in Lab 28?</h3><label class="option"><input type="radio" name="24-q0" value="0"><span>Hosted-agent identity provides passwordless service-to-service authentication, while RBAC grants resource access.</span></label><label class="option"><input type="radio" name="24-q0" value="1"><span>It removes the need for model authentication and authorization.</span></label><label class="option"><input type="radio" name="24-q0" value="2"><span>It stores provider credentials directly in Python source.</span></label><label class="option"><input type="radio" name="24-q0" value="3"><span>It automatically deploys every Azure resource without configuration.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="0"><div class="question-number">2</div><div class="question-body"><h3>Which setup choice matches this lab?</h3><label class="option"><input type="radio" name="24-q1" value="0"><span>Grant Blob Data Reader to the local or hosted identity and never use the account key.</span></label><label class="option"><input type="radio" name="24-q1" value="1"><span>Hard-code every credential so the code is self-contained.</span></label><label class="option"><input type="radio" name="24-q1" value="2"><span>Skip role assignments because successful sign-in grants every permission.</span></label><label class="option"><input type="radio" name="24-q1" value="3"><span>Use real customer data before validating the classroom scenario.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="0"><div class="question-number">3</div><div class="question-body"><h3>What evidence proves that the lab worked?</h3><label class="option"><input type="radio" name="24-q2" value="0"><span>The policy tool reads the private Blob only when the active identity is authorized.</span></label><label class="option"><input type="radio" name="24-q2" value="1"><span>The Python file exists, even if it was not run.</span></label><label class="option"><input type="radio" name="24-q2" value="2"><span>The script compiled, but its output was not inspected.</span></label><label class="option"><input type="radio" name="24-q2" value="3"><span>The model returned any fluent answer, regardless of the expected behavior.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section></div>

@@ -82,7 +82,7 @@ def round_robin_selector(state: GroupChatState) -&gt; str:
     )</code></pre></div></div></article><article class="step-card"><div class="step-number">3</div><div class="step-body"><h4>Run and inspect the scenario</h4><p>Execute the lab task and expose the result needed for validation.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    workflow_instance = GroupChatBuilder(
         participants=[expert, verifier, clarifier],
         selection_func=round_robin_selector,
-        termination_condition=lambda conversation: len(conversation) &gt;= 5,
+        #termination_condition=lambda conversation: len(conversation) &gt;= 5,
     ).build()
 
     result = await workflow_instance.run(&quot;How does a Python Protocol differ from an abstract base class?&quot;)

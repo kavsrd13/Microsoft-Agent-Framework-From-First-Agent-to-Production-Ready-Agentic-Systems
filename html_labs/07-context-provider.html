@@ -72,7 +72,7 @@ class UserMemoryProvider(ContextProvider):
     ) -&gt; None:
         user_name = state.get(&quot;user_name&quot;)
         instruction = (
-            f&quot;The user's name is {user_name}. Address them by name.&quot;
+            f&quot;The user's name is {user_name}.Address by the user's name in your responses.&quot;
             if user_name
             else &quot;You do not know the user's name yet. Ask for it politely.&quot;
         )
@@ -100,7 +100,7 @@ class UserMemoryProvider(ContextProvider):
     )
     session = agent.create_session()
 
-    print((await agent.run(&quot;Hello. My name is Alice.&quot;, session=session)).text)
+    print((await agent.run(&quot;Hello.myself krishna&quot;, session=session)).text)
     print((await agent.run(&quot;What is 2 + 2?&quot;, session=session)).text)
     print(&quot;Provider state:&quot;, session.state[&quot;user_memory&quot;])
 

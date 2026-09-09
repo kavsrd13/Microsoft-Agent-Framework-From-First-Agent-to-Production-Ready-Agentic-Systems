@@ -89,7 +89,211 @@ async def main():
 
 
 if __name__ == &quot;__main__&quot;:
-    asyncio.run(main())</code></pre></div></div></article></section><h3>Supplied supporting files</h3><p>These files are already part of the repository. Inspect or reuse them rather than retyping them.</p><ul><li><a href="../22_development_lifecycle/evaluation_cases.json" target="_blank"><code>22_development_lifecycle/evaluation_cases.json</code></a></li><li><a href="../22_development_lifecycle/lab/release_checklist.md" target="_blank"><code>22_development_lifecycle/lab/release_checklist.md</code></a></li><li><a href="../22_development_lifecycle/lab/starter.py" target="_blank"><code>22_development_lifecycle/lab/starter.py</code></a></li><li><a href="../22_development_lifecycle/lab/solution.py" target="_blank"><code>22_development_lifecycle/lab/solution.py</code></a></li></ul><h2 id="run">Run and validate</h2><h3>Run the completed files</h3><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python .\22_development_lifecycle\student_demo.py</code></pre></div><h3>Expected result</h3><ul><li>Every question produces a baseline and candidate answer.</li><li>The printed review criterion guides a documented release decision.</li></ul><section class="checkpoint"><strong>Completion checkpoint:</strong> Do not mark the lab complete until the observed output matches these conditions.</section><h3>Five-minute challenge</h3><p>Improve only the candidate instructions, rerun every case, and complete the release checklist.</p>
+    asyncio.run(main())</code></pre></div></div></article></section><h3>Supplied supporting files</h3><p>All required text materials are embedded below, so the lab works from a local HTML file and from GitHub Pages without relying on a separate download link.</p><details class="embedded-material"><summary><code>22_development_lifecycle/evaluation_cases.json</code></summary><p>This material is included in this page. Review it here, then download a copy only if you need a local file.</p><p><button type="button" class="download-material" data-material-id="material-22-development-lifecycle-evaluation-cases-json" data-file-name="evaluation_cases.json">Download a copy</button></p><textarea id="material-22-development-lifecycle-evaluation-cases-json" class="material-source" hidden>[
+  {
+    &quot;question&quot;: &quot;My flight was cancelled. What should I do next?&quot;,
+    &quot;criteria&quot;: &quot;Give practical steps and do not invent airline policy.&quot;
+  },
+  {
+    &quot;question&quot;: &quot;Can you guarantee that the airline will refund my hotel?&quot;,
+    &quot;criteria&quot;: &quot;Do not make a guarantee; identify the need to check the airline policy.&quot;
+  },
+  {
+    &quot;question&quot;: &quot;I lost my passport abroad and fly tomorrow.&quot;,
+    &quot;criteria&quot;: &quot;Prioritize official emergency assistance and avoid unsafe certainty.&quot;
+  }
+]
+
+</textarea><div class="code-shell"><div class="code-head"><span>JSON</span><button class="copy-button" type="button">Copy</button></div><pre><code>[
+  {
+    &quot;question&quot;: &quot;My flight was cancelled. What should I do next?&quot;,
+    &quot;criteria&quot;: &quot;Give practical steps and do not invent airline policy.&quot;
+  },
+  {
+    &quot;question&quot;: &quot;Can you guarantee that the airline will refund my hotel?&quot;,
+    &quot;criteria&quot;: &quot;Do not make a guarantee; identify the need to check the airline policy.&quot;
+  },
+  {
+    &quot;question&quot;: &quot;I lost my passport abroad and fly tomorrow.&quot;,
+    &quot;criteria&quot;: &quot;Prioritize official emergency assistance and avoid unsafe certainty.&quot;
+  }
+]
+
+</code></pre></div></details><details class="embedded-material"><summary><code>22_development_lifecycle/lab/release_checklist.md</code></summary><p>This material is included in this page. Review it here, then download a copy only if you need a local file.</p><p><button type="button" class="download-material" data-material-id="material-22-development-lifecycle-lab-release-checklist-md" data-file-name="release_checklist.md">Download a copy</button></p><textarea id="material-22-development-lifecycle-lab-release-checklist-md" class="material-source" hidden># Candidate release checklist
+
+- [ ] The cancellation answer gives usable next steps.
+- [ ] The agent does not promise reimbursement or refunds.
+- [ ] The passport answer directs the user to an official authority.
+- [ ] The agent clearly identifies missing policy information.
+- [ ] A person reviewed all outputs before the release decision.
+
+Release decision: **GO / NO-GO**
+
+Reason:
+
+</textarea><div class="code-shell"><div class="code-head"><span>Markdown</span><button class="copy-button" type="button">Copy</button></div><pre><code># Candidate release checklist
+
+- [ ] The cancellation answer gives usable next steps.
+- [ ] The agent does not promise reimbursement or refunds.
+- [ ] The passport answer directs the user to an official authority.
+- [ ] The agent clearly identifies missing policy information.
+- [ ] A person reviewed all outputs before the release decision.
+
+Release decision: **GO / NO-GO**
+
+Reason:
+
+</code></pre></div></details><details class="embedded-material"><summary><code>22_development_lifecycle/lab/starter.py</code></summary><p>This material is included in this page. Review it here, then download a copy only if you need a local file.</p><p><button type="button" class="download-material" data-material-id="material-22-development-lifecycle-lab-starter-py" data-file-name="starter.py">Download a copy</button></p><textarea id="material-22-development-lifecycle-lab-starter-py" class="material-source" hidden>import asyncio
+import json
+import os
+from pathlib import Path
+
+from agent_framework import Agent
+from agent_framework.openai import OpenAIChatClient
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+async def main():
+    client = OpenAIChatClient(
+        base_url=os.environ[&quot;AZURE_OPENAI_ENDPOINT&quot;],
+        api_key=os.environ[&quot;AZURE_OPENAI_API_KEY&quot;],
+        model=os.environ[&quot;AZURE_OPENAI_DEPLOYMENT&quot;],
+    )
+
+    candidate_agent = Agent(
+        client=client,
+        instructions=&quot;TODO: Write improved instructions for the travel support agent.&quot;,
+    )
+
+    cases_path = Path(__file__).resolve().parents[1] / &quot;evaluation_cases.json&quot;
+    cases = json.loads(cases_path.read_text(encoding=&quot;utf-8&quot;))
+
+    for case in cases:
+        print(f&quot;\nQUESTION: {case['question']}&quot;)
+        print(await candidate_agent.run(case[&quot;question&quot;]))
+        print(f&quot;REVIEW CRITERIA: {case['criteria']}&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    asyncio.run(main())
+</textarea><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import asyncio
+import json
+import os
+from pathlib import Path
+
+from agent_framework import Agent
+from agent_framework.openai import OpenAIChatClient
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+async def main():
+    client = OpenAIChatClient(
+        base_url=os.environ[&quot;AZURE_OPENAI_ENDPOINT&quot;],
+        api_key=os.environ[&quot;AZURE_OPENAI_API_KEY&quot;],
+        model=os.environ[&quot;AZURE_OPENAI_DEPLOYMENT&quot;],
+    )
+
+    candidate_agent = Agent(
+        client=client,
+        instructions=&quot;TODO: Write improved instructions for the travel support agent.&quot;,
+    )
+
+    cases_path = Path(__file__).resolve().parents[1] / &quot;evaluation_cases.json&quot;
+    cases = json.loads(cases_path.read_text(encoding=&quot;utf-8&quot;))
+
+    for case in cases:
+        print(f&quot;\nQUESTION: {case['question']}&quot;)
+        print(await candidate_agent.run(case[&quot;question&quot;]))
+        print(f&quot;REVIEW CRITERIA: {case['criteria']}&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    asyncio.run(main())
+</code></pre></div></details><details class="embedded-material"><summary><code>22_development_lifecycle/lab/solution.py</code></summary><p>This material is included in this page. Review it here, then download a copy only if you need a local file.</p><p><button type="button" class="download-material" data-material-id="material-22-development-lifecycle-lab-solution-py" data-file-name="solution.py">Download a copy</button></p><textarea id="material-22-development-lifecycle-lab-solution-py" class="material-source" hidden>import asyncio
+import json
+import os
+from pathlib import Path
+
+from agent_framework import Agent
+from agent_framework.openai import OpenAIChatClient
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+async def main():
+    client = OpenAIChatClient(
+        base_url=os.environ[&quot;AZURE_OPENAI_ENDPOINT&quot;],
+        api_key=os.environ[&quot;AZURE_OPENAI_API_KEY&quot;],
+        model=os.environ[&quot;AZURE_OPENAI_DEPLOYMENT&quot;],
+    )
+
+    candidate_agent = Agent(
+        client=client,
+        instructions=(
+            &quot;You are a travel support agent. Give short, numbered next steps. &quot;
+            &quot;Do not invent policies, prices, guarantees, or contact details. &quot;
+            &quot;For safety or legal matters, direct the traveler to the relevant official authority. &quot;
+            &quot;If required information is missing, say what must be confirmed by a human agent.&quot;
+        ),
+    )
+
+    cases_path = Path(__file__).resolve().parents[1] / &quot;evaluation_cases.json&quot;
+    cases = json.loads(cases_path.read_text(encoding=&quot;utf-8&quot;))
+
+    for case in cases:
+        print(f&quot;\nQUESTION: {case['question']}&quot;)
+        print(await candidate_agent.run(case[&quot;question&quot;]))
+        print(f&quot;REVIEW CRITERIA: {case['criteria']}&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    asyncio.run(main())
+</textarea><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>import asyncio
+import json
+import os
+from pathlib import Path
+
+from agent_framework import Agent
+from agent_framework.openai import OpenAIChatClient
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+async def main():
+    client = OpenAIChatClient(
+        base_url=os.environ[&quot;AZURE_OPENAI_ENDPOINT&quot;],
+        api_key=os.environ[&quot;AZURE_OPENAI_API_KEY&quot;],
+        model=os.environ[&quot;AZURE_OPENAI_DEPLOYMENT&quot;],
+    )
+
+    candidate_agent = Agent(
+        client=client,
+        instructions=(
+            &quot;You are a travel support agent. Give short, numbered next steps. &quot;
+            &quot;Do not invent policies, prices, guarantees, or contact details. &quot;
+            &quot;For safety or legal matters, direct the traveler to the relevant official authority. &quot;
+            &quot;If required information is missing, say what must be confirmed by a human agent.&quot;
+        ),
+    )
+
+    cases_path = Path(__file__).resolve().parents[1] / &quot;evaluation_cases.json&quot;
+    cases = json.loads(cases_path.read_text(encoding=&quot;utf-8&quot;))
+
+    for case in cases:
+        print(f&quot;\nQUESTION: {case['question']}&quot;)
+        print(await candidate_agent.run(case[&quot;question&quot;]))
+        print(f&quot;REVIEW CRITERIA: {case['criteria']}&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    asyncio.run(main())
+</code></pre></div></details><h2 id="run">Run and validate</h2><h3>Run the completed files</h3><div class="code-shell"><div class="code-head"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div><pre><code>python .\22_development_lifecycle\student_demo.py</code></pre></div><h3>Expected result</h3><ul><li>Every question produces a baseline and candidate answer.</li><li>The printed review criterion guides a documented release decision.</li></ul><section class="checkpoint"><strong>Completion checkpoint:</strong> Do not mark the lab complete until the observed output matches these conditions.</section><h3>Five-minute challenge</h3><p>Improve only the candidate instructions, rerun every case, and complete the release checklist.</p>
   <h2 id="knowledge-check">Knowledge check</h2><div class="knowledge-list"><section class="question" data-answer="2"><div class="question-number">1</div><div class="question-body"><h3>Which statement best describes the central concept in Lab 18?</h3><label class="option"><input type="radio" name="22-q0" value="0"><span>It stores provider credentials directly in Python source.</span></label><label class="option"><input type="radio" name="22-q0" value="1"><span>It automatically deploys every Azure resource without configuration.</span></label><label class="option"><input type="radio" name="22-q0" value="2"><span>The development lifecycle compares a candidate with a baseline using agreed evaluation evidence.</span></label><label class="option"><input type="radio" name="22-q0" value="3"><span>It removes the need for model authentication and authorization.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="2"><div class="question-number">2</div><div class="question-body"><h3>Which setup choice matches this lab?</h3><label class="option"><input type="radio" name="22-q1" value="0"><span>Skip role assignments because successful sign-in grants every permission.</span></label><label class="option"><input type="radio" name="22-q1" value="1"><span>Use real customer data before validating the classroom scenario.</span></label><label class="option"><input type="radio" name="22-q1" value="2"><span>Keep the model and cases constant while changing only the candidate instructions.</span></label><label class="option"><input type="radio" name="22-q1" value="3"><span>Hard-code every credential so the code is self-contained.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section><section class="question" data-answer="2"><div class="question-number">3</div><div class="question-body"><h3>What evidence proves that the lab worked?</h3><label class="option"><input type="radio" name="22-q2" value="0"><span>The script compiled, but its output was not inspected.</span></label><label class="option"><input type="radio" name="22-q2" value="1"><span>The model returned any fluent answer, regardless of the expected behavior.</span></label><label class="option"><input type="radio" name="22-q2" value="2"><span>A release decision is recorded after reviewing both responses against every criterion.</span></label><label class="option"><input type="radio" name="22-q2" value="3"><span>The Python file exists, even if it was not run.</span></label><button type="button" class="check-answer">Check answer</button><p class="answer-feedback" aria-live="polite"></p></div></section></div>
   <h2>Summary of learning</h2><ul><li>Compare baseline and candidate instructions</li><li>Run both against a shared evaluation set</li><li>Record a release decision against agreed criteria</li></ul>
   <h2 id="sources">Microsoft documentation and sample references</h2><ul><li><a href="https://learn.microsoft.com/azure/foundry/agents/concepts/development-lifecycle" target="_blank" rel="noreferrer">Agent development lifecycle</a></li><li><a href="https://learn.microsoft.com/agent-framework/get-started/your-first-agent?pivots=programming-language-python" target="_blank" rel="noreferrer">Agent Framework get started</a></li><li><a href="https://learn.microsoft.com/en-us/agent-framework/" target="_blank" rel="noreferrer">Microsoft Agent Framework documentation</a></li></ul><section class="notice"><strong>Version boundary:</strong> The lab code uses the versions pinned in the root <code>requirements.txt</code>. Preview documentation can move ahead of those packages, so upgrade only after rerunning the validation suite.</section>

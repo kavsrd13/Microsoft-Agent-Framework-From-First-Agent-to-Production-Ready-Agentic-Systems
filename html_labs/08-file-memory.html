@@ -81,14 +81,14 @@ async def main() -&gt; None:
     print(&quot;=== First session ===&quot;)
     print(
         (await agent.run(
-            &quot;I am vegetarian and travel with my dog. Remember this for future trips.&quot;,
+            &quot;I am vegetarian and travel with my Cat. Remember this for future trips.&quot;,
             session=first_session,
         )).text
     )</code></pre></div></div></article><article class="step-card"><div class="step-number">3</div><div class="step-body"><h4>Run and inspect the scenario</h4><p>Execute the lab task and expose the result needed for validation.</p><div class="code-shell"><div class="code-head"><span>Python</span><button class="copy-button" type="button">Copy</button></div><pre><code>    second_session = agent.create_session()
     print(&quot;\n=== New session, same memory scope ===&quot;)
     print(
         (await agent.run(
-            &quot;Recommend a restaurant and hotel for Paris.&quot;,
+            &quot;Recommend a restaurant and hotel for Chennai.&quot;,
             session=second_session,
         )).text
     )
